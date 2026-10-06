@@ -16,6 +16,7 @@ Maintenance des machines-outils pour ateliers d'usinage : signalement de pannes,
 2. `config.js` : URL du projet et clé `anon` (jamais la clé `service_role`).
 3. Vercel : importer ce dépôt (type de projet : Other). Chaque modification poussée sur GitHub est mise en ligne automatiquement.
 4. Supabase > Authentication > URL Configuration : mettre l'adresse du site dans Site URL.
+5. Supabase > Authentication > Sign In / Providers : activer « Allow anonymous sign-ins » (les opérateurs entrent avec le code d'atelier, sans e-mail).
 
 ## Alertes par e-mail (facultatif)
 

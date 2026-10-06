@@ -319,7 +319,7 @@ body:not([data-stage="app"]) .tabs,body:not([data-stage="app"]) .me{display:none
 .member .cnt{text-align:right}
 .member .cnt b{display:block;font-family:var(--mono);font-size:17px;font-weight:500}
 .member .cnt span{font-size:11px;color:var(--muted)}
-.member .role-act{grid-column:2 / span 2}
+.member .role-act{grid-column:2 / span 2;display:flex;flex-wrap:wrap;gap:4px}
 .role-badge{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.05em;color:var(--accent);margin-left:6px}
 .alert-bar{position:fixed;top:calc(env(safe-area-inset-top,0px) + 10px);left:50%;transform:translateX(-50%);z-index:45;width:min(560px,calc(100% - 24px));display:grid;grid-template-columns:auto minmax(0,1fr) auto auto;gap:10px;align-items:center;padding:12px 14px;border-radius:var(--radius);background:var(--stop-soft);border:1px solid var(--stop);box-shadow:0 10px 30px rgba(0,0,0,.5)}
 .alert-bar b{display:block;color:var(--stop)}
@@ -356,20 +356,34 @@ body:not([data-stage="app"]) .tabs,body:not([data-stage="app"]) .me{display:none
 
   <!-- Connexion -->
   <section id="v-auth" class="view" aria-labelledby="h-auth" hidden>
-    <div class="auth-card panel">
+    <div class="auth-card stack-y">
+      <div class="page-h"><h1 id="h-auth">Bienvenue sur COPO</h1><p class="lede">Opérateur : entrez le code d'atelier donné par votre responsable. Pas besoin d'e-mail.</p></div>
+      <form id="f-op" class="panel panel-b form">
+        <h2>Opérateur</h2>
+        <label for="op-code">Code d'atelier<input id="op-code" required maxlength="12" class="mono" placeholder="ex. 7F3A9C1B" autocapitalize="characters" autocomplete="off"></label>
+        <div class="grid2">
+          <label for="op-prenom">Prénom<input id="op-prenom" required maxlength="30" autocomplete="given-name"></label>
+          <label for="op-nom">Nom<input id="op-nom" required maxlength="30" autocomplete="family-name"></label>
+        </div>
+        <div class="actions start"><button class="btn primary" type="submit" id="op-submit">Entrer dans l'atelier</button></div>
+        <p class="hint" id="op-msg" role="status"></p>
+      </form>
+    <div class="panel">
       <form id="f-login" class="panel-b form">
-        <div class="page-h"><h1 id="h-auth">Connexion</h1><p class="lede">Connectez-vous pour accéder au parc machines de votre atelier.</p></div>
+        <h2>Responsable</h2>
+        <p class="hint">Connexion par e-mail, pour créer l'atelier et suivre l'équipe.</p>
         <label for="l-email">Adresse e-mail<input id="l-email" type="email" autocomplete="email" required></label>
         <label for="l-pass">Mot de passe (6 caractères minimum)<input id="l-pass" type="password" autocomplete="current-password" minlength="6" required></label>
         <div class="actions start"><button class="btn primary" type="submit" id="l-submit">Se connecter</button><button class="btn" type="button" data-act="signup">Créer un compte</button></div>
         <p class="hint" id="l-msg" role="status"></p>
       </form>
     </div>
+    </div>
   </section>
 
   <!-- Choix de l'atelier -->
   <section id="v-onboard" class="view" aria-labelledby="h-onboard" hidden>
-    <div class="page-h"><h1 id="h-onboard">Votre atelier</h1><p class="lede">Créez l'espace de votre atelier, ou rejoignez celui de vos collègues avec leur code d'invitation.</p></div>
+    <div class="page-h"><h1 id="h-onboard">Votre atelier</h1><p class="lede">Créez l'espace de votre atelier. Si vous rejoignez l'atelier d'un autre responsable, entrez son code d'atelier.</p></div>
     <div class="panel panel-b form">
       <label for="o-prenom">Votre prénom (affiché à vos collègues)<input id="o-prenom" maxlength="40" autocomplete="given-name" placeholder="ex. Karim"></label>
     </div>
@@ -403,7 +417,7 @@ body:not([data-stage="app"]) .tabs,body:not([data-stage="app"]) .me{display:none
       <div class="panel-h"><h2>Mon compte</h2></div>
       <form id="f-profil" class="panel-b form">
         <label for="pf-nom">Prénom affiché dans l'atelier<input id="pf-nom" required maxlength="40" autocomplete="given-name"></label>
-        <p class="hint">Connecté en tant que <b id="moi-email"></b></p>
+        <p class="hint" id="moi-email"></p>
         <div class="actions"><button type="button" class="btn ghost" data-act="logout">Se déconnecter</button><button class="btn primary" type="submit">Enregistrer</button></div>
       </form>
     </div>
@@ -424,10 +438,11 @@ body:not([data-stage="app"]) .tabs,body:not([data-stage="app"]) .me{display:none
       </div>
     </div>
     <div class="panel">
-      <div class="panel-h"><h2>Inviter des collègues</h2></div>
+      <div class="panel-h"><h2>Code d'atelier</h2></div>
       <div class="panel-b stack-y">
-        <p>Chaque collègue crée son compte COPO, puis entre ce code pour rejoindre l'atelier :</p>
-        <div class="qrrow"><span class="invite mono" id="at-code"></span><button class="btn sm" type="button" data-act="copy-code">Copier le code</button></div>
+        <p>Donnez ce code à vos opérateurs : ils l'entrent sur l'écran d'accueil avec leur prénom et leur nom, sans e-mail.</p>
+        <div class="qrrow"><span class="invite mono" id="at-code"></span><button class="btn sm" type="button" data-act="copy-code">Copier le code</button><button class="btn sm ghost" type="button" data-act="new-code">Changer le code</button></div>
+        <p class="hint">Changez le code si vous pensez qu'il a circulé hors de l'atelier. Les personnes déjà entrées gardent leur accès : retirez-les de l'équipe si besoin.</p>
       </div>
     </div>
   </section>
@@ -597,7 +612,7 @@ body:not([data-stage="app"]) .tabs,body:not([data-stage="app"]) .me{display:none
     </div>
     <div class="panel">
       <div class="panel-b form">
-        <p class="hint">Les personnes qui scannent doivent avoir un compte COPO dans votre atelier (code d'invitation dans l'onglet Atelier).</p>
+        <p class="hint">Les personnes qui scannent doivent être entrées dans l'atelier avec son code (onglet Responsable).</p>
         <div class="actions start"><button class="btn primary" type="button" id="lbl-dl" data-act="lbl-dl" hidden>Télécharger la planche d'étiquettes (PNG)</button></div>
       </div>
     </div>
@@ -1106,7 +1121,7 @@ function renderMoi() {
   $("#moi-nom").textContent = nm;
   $("#moi-avatar").textContent = nm.charAt(0).toUpperCase();
   $("#moi-sub").textContent = `${isAdmin() ? "Responsable" : "Opérateur"} · ${S.atelier.nom}`;
-  $("#moi-email").textContent = (S.user && S.user.email) || "";
+  $("#moi-email").textContent = S.user && S.user.is_anonymous ? "Connecté avec le code d'atelier, sans e-mail. Si vous vous déconnectez, il faudra ressaisir le code." : `Connecté avec l'e-mail ${(S.user && S.user.email) || ""}`;
   const pf = $("#pf-nom");
   if (document.activeElement !== pf) pf.value = (S.me && S.me.nom) || "";
   const acts = myActions();
@@ -1159,7 +1174,8 @@ function renderResponsable() {
     const roleBtn = meRow ? "" : u.role === "admin"
       ? `<button class="btn sm ghost" type="button" data-act="role" data-uid="${esc(u.user_id)}" data-role="membre">Retirer le rôle de responsable</button>`
       : `<button class="btn sm ghost" type="button" data-act="role" data-uid="${esc(u.user_id)}" data-role="admin">Nommer responsable</button>`;
-    return `<div class="member"><span class="av" aria-hidden="true">${esc(name.charAt(0).toUpperCase())}</span><span class="min0"><span class="n">${esc(name)}${meRow ? " (vous)" : ""}</span>${u.role === "admin" ? `<span class="role-badge">Responsable</span>` : ""}<span class="a${mins < 15 ? " on" : ""}">${esc(act)}</span></span><span class="cnt"><b>${count}</b><span>entretiens aujourd'hui</span></span>${roleBtn ? `<span class="role-act">${roleBtn}</span>` : ""}</div>`;
+    const removeBtn = meRow ? "" : `<button class="btn sm ghost" type="button" data-act="remove-member" data-uid="${esc(u.user_id)}">Retirer de l'atelier</button>`;
+    return `<div class="member"><span class="av" aria-hidden="true">${esc(name.charAt(0).toUpperCase())}</span><span class="min0"><span class="n">${esc(name)}${meRow ? " (vous)" : ""}</span>${u.role === "admin" ? `<span class="role-badge">Responsable</span>` : ""}<span class="a${mins < 15 ? " on" : ""}">${esc(act)}</span></span><span class="cnt"><b>${count}</b><span>entretiens aujourd'hui</span></span>${roleBtn ? `<span class="role-act">${roleBtn}${removeBtn}</span>` : ""}</div>`;
   }).join("") : `<p class="empty">Chargement de l'équipe…</p>`;
 
   const feed = [];
@@ -1528,6 +1544,23 @@ document.addEventListener("click", async e => {
     $("#alert-bar").hidden = true;
   } else if (act === "notif-on") {
     if ("Notification" in window) { try { await Notification.requestPermission(); } catch (err) {} render(); }
+  } else if (act === "remove-member") {
+    if (!SB || !S.atelier || !armed(a, "Confirmer le retrait")) return;
+    await busy(a, async () => {
+      const { error } = await SB.rpc("retirer_membre", { p_atelier: S.atelier.id, p_user: a.dataset.uid });
+      if (error) { toast("Retrait impossible : " + error.message); return; }
+      toast("Personne retirée de l'atelier");
+      await loadMembers();
+    });
+  } else if (act === "new-code") {
+    if (!SB || !S.atelier || !armed(a, "Confirmer le nouveau code")) return;
+    await busy(a, async () => {
+      const { data, error } = await SB.rpc("nouveau_code", { p_atelier: S.atelier.id });
+      if (error) { toast("Changement impossible : " + error.message); return; }
+      S.atelier = { ...S.atelier, code_invitation: data };
+      toast("Nouveau code : " + data);
+      render();
+    });
   } else if (act === "role") {
     if (!SB || !S.atelier) return;
     await busy(a, async () => {
@@ -1539,6 +1572,7 @@ document.addEventListener("click", async e => {
   } else if (act === "signup") {
     await signUp(a);
   } else if (act === "logout") {
+    if (S.user && S.user.is_anonymous && !armed(a, "Confirmer : il faudra ressaisir le code")) return;
     if (SB) await SB.auth.signOut();
   } else if (act === "copy-code") {
     const code = S.atelier ? S.atelier.code_invitation : "";
@@ -1659,6 +1693,35 @@ document.addEventListener("submit", async e => {
     if (min >= max) { toast("La concentration mini doit être inférieure à la maxi."); return; }
     const ok = await busy(btn, () => write(() => S.db.doc("machines/" + m.id).update({ concMin: min, concMax: max, phMin: ph, facteur: fact, liquide: $("#s-liq").checked }), "Réglages enregistrés"));
     if (ok) { $("#c-fact").value = fact; updateCalc(); }
+  }
+
+  else if (f.id === "f-op") {
+    if (!SB) return;
+    const code = $("#op-code").value.trim().toUpperCase();
+    const prenom = $("#op-prenom").value.trim(), nom = $("#op-nom").value.trim();
+    if (!code || !prenom || !nom) return;
+    $("#op-msg").textContent = "";
+    await busy(btn, async () => {
+      S.joining = true;
+      const { data: auth, error: e1 } = await SB.auth.signInAnonymously();
+      if (e1 || !auth || !auth.session) {
+        S.joining = false;
+        $("#op-msg").textContent = /anonymous/i.test((e1 && e1.message) || "")
+          ? "L'entrée par code n'est pas encore activée : le responsable doit autoriser les connexions anonymes dans Supabase."
+          : "Connexion impossible : " + ((e1 && e1.message) || "réessayez dans un instant.");
+        return;
+      }
+      const { error } = await SB.rpc("rejoindre_atelier", { p_code: code, p_prenom: `${prenom} ${nom}` });
+      S.joining = false;
+      if (error) {
+        $("#op-msg").textContent = /invalide/i.test(error.message) ? "Code d'atelier introuvable. Vérifiez-le auprès de votre responsable." : "Impossible de rejoindre : " + error.message;
+        await SB.auth.signOut();
+        return;
+      }
+      f.reset();
+      S.atelier = null;
+      await startSession(auth.session);
+    });
   }
 
   else if (f.id === "f-login") {
@@ -1817,7 +1880,7 @@ function teardown() {
 
 async function startSession(session) {
   const user = session ? session.user : null;
-  if (!user) { teardown(); S.user = null; setStage("auth"); return; }
+  if (!user) { teardown(); S.user = null; S.view = "tableau"; S.mid = null; S.prev = "tableau"; setHash("tableau"); setStage("auth"); return; }
   if (S.user && S.user.id === user.id && S.atelier) return;
   S.user = user;
   const { data, error } = await SB.from("membres").select("atelier_id, nom, role, alertes_email, ateliers(id, nom, code_invitation)").eq("user_id", user.id).limit(1);
@@ -1883,7 +1946,7 @@ if (!SB) {
 } else {
   SB.auth.onAuthStateChange((event, session) => {
     if (event === "SIGNED_OUT") { setTimeout(() => startSession(null), 0); return; }
-    if (event === "INITIAL_SESSION" || event === "SIGNED_IN") setTimeout(() => startSession(session), 0);
+    if (event === "INITIAL_SESSION" || event === "SIGNED_IN") setTimeout(() => { if (!S.joining) startSession(session); }, 0);
   });
 }
 function showNotice(msg) { const n = $("#notice"); n.textContent = msg; n.hidden = false; }
