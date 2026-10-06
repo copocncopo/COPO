@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>COPO</title>
 <meta name="description" content="COPO : maintenance des machines-outils pour ateliers d'usinage. Pannes, entretien préventif, liquide de coupe et étiquettes QR.">
-<meta name="theme-color" content="#141b21">
+<meta name="theme-color" content="#0f1418">
 <link rel="icon" href="favicon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="icon-192.png">
 <link rel="manifest" href="manifest.webmanifest">
@@ -13,45 +13,25 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Barlow:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
 <style>
-/* Layout: app shell. Sticky bar with tabs, one 1080px column. Machine state is encoded twice: a three-lamp signal tower (rouge / orange / vert) and a pill. */
+/* Layout: Nuit d'atelier. App shell on a dark steel ground, rounded cards, gold accent for actions.
+   Tabs sit in the top bar on a computer and become a bottom bar on a phone. */
 :root{
-  --bg:#e8ebea; --surface:#f8f9f8; --surface-2:#eef1f0; --line:#cfd6d9;
-  --fg:#18222b; --muted:#566570;
-  --accent:#00598c; --accent-fg:#ffffff; --accent-soft:#dcebf4;
-  --stop:#b3302a; --stop-2:#962520; --stop-soft:#f6dedb; --on-stop:#ffffff;
-  --warn:#94600f; --warn-soft:#f5e8cf;
-  --ok:#2a7146; --ok-soft:#dbeee2;
-  --lamp-off:#c3cbcf;
+  --bg:#0f1418; --surface:#1a2229; --surface-2:#222c34; --line:#2b3640;
+  --fg:#e8edf1; --muted:#9aa9b5;
+  --accent:#e8ac45; --accent-fg:#1a1206; --accent-soft:#3a2d14;
+  --stop:#f0766c; --stop-2:#dc5f55; --stop-soft:#3e1d1b; --on-stop:#1d0806;
+  --warn:#f5a04a; --warn-soft:#3a2614;
+  --ok:#67c48d; --ok-soft:#173326;
+  --lamp-off:#3a4650; --bar:#131a1f;
   --paper:#ffffff; --ink:#121212;
   --display:"Barlow Condensed","Arial Narrow",system-ui,sans-serif;
   --body:"Barlow",system-ui,-apple-system,"Segoe UI",sans-serif;
   --mono:"IBM Plex Mono",ui-monospace,"SFMono-Regular",Menlo,monospace;
-  --radius:6px;
-}
-@media (prefers-color-scheme: dark){
-  :root:not([data-theme="light"]){
-    --bg:#111518; --surface:#192026; --surface-2:#212a32; --line:#313d47;
-    --fg:#e4e9ed; --muted:#98a7b3;
-    --accent:#5aaee0; --accent-fg:#06202f; --accent-soft:#16344a;
-    --stop:#f0766c; --stop-2:#dc5f55; --stop-soft:#3e1d1b; --on-stop:#1d0806;
-    --warn:#e3a94f; --warn-soft:#3a2c14;
-    --ok:#67c48d; --ok-soft:#173326;
-    --lamp-off:#3a4650;
-    color-scheme:dark;
-  }
-}
-:root[data-theme="dark"]{
-  --bg:#111518; --surface:#192026; --surface-2:#212a32; --line:#313d47;
-  --fg:#e4e9ed; --muted:#98a7b3;
-  --accent:#5aaee0; --accent-fg:#06202f; --accent-soft:#16344a;
-  --stop:#f0766c; --stop-2:#dc5f55; --stop-soft:#3e1d1b; --on-stop:#1d0806;
-  --warn:#e3a94f; --warn-soft:#3a2c14;
-  --ok:#67c48d; --ok-soft:#173326;
-  --lamp-off:#3a4650;
+  --radius:14px;
   color-scheme:dark;
 }
 *{box-sizing:border-box}
-html{color-scheme:light}
+html{color-scheme:dark}
 body{margin:0}
 [hidden]{display:none!important}
 img{max-width:100%}
@@ -280,6 +260,72 @@ body:not([data-stage="app"]) .tabs,body:not([data-stage="app"]) .me{display:none
 .lightbox{position:fixed;inset:0;background:rgba(10,14,17,.86);display:grid;place-items:center;gap:12px;padding:24px 16px;z-index:60;align-content:center}
 .lightbox img{max-width:100%;max-height:78vh;border-radius:4px}
 @media (prefers-reduced-motion:no-preference){.toast{animation:rise .18s ease-out}@keyframes rise{from{transform:translate(-50%,8px);opacity:0}}}
+
+/* ---------- v2 ---------- */
+.bar{background:var(--bar)}
+.panel,.tile,.mcard{border-color:transparent;background:var(--surface)}
+.btn{border-radius:10px}
+.btn.signal{background:var(--accent);border-color:var(--accent);color:var(--accent-fg);font-size:21px;padding:16px 18px;width:100%;letter-spacing:.06em}
+.tab{display:inline-flex;align-items:center;gap:6px}
+.tab svg{width:19px;height:19px;flex:none}
+.tab[aria-current="page"]{box-shadow:inset 0 -2px 0 var(--accent)}
+@media (max-width:700px){
+  .tabs{position:fixed;left:0;right:0;bottom:0;z-index:30;order:0;flex-basis:auto;display:grid;grid-auto-flow:column;grid-auto-columns:minmax(0,1fr);gap:0;background:var(--bar);border-top:1px solid var(--line);padding:6px 2px calc(10px + env(safe-area-inset-bottom,0px));overflow:visible}
+  .tab{flex-direction:column;gap:3px;font-family:var(--body);font-size:11px;font-weight:600;text-transform:none;letter-spacing:0;padding:6px 2px;min-height:52px;justify-content:center;border-radius:0;box-shadow:none!important;background:transparent!important}
+  .tab svg{width:22px;height:22px}
+  .tab[aria-current="page"]{color:var(--accent)}
+  .wrap{padding-bottom:120px}
+  .toast{bottom:calc(96px + env(safe-area-inset-bottom,0px))}
+}
+.tiles.tiles-3{grid-template-columns:repeat(3,minmax(0,1fr))}
+.avatar{width:52px;height:52px;border-radius:26px;background:var(--accent);color:var(--accent-fg);display:flex;align-items:center;justify-content:center;font-family:var(--display);font-weight:700;font-size:24px;flex:none}
+.chips{display:flex;gap:8px;flex-wrap:wrap}
+.chip{font:inherit;font-size:13px;font-weight:600;padding:7px 14px;border-radius:999px;border:0;background:var(--surface);color:var(--muted);cursor:pointer;min-height:38px}
+.chip[aria-pressed="true"]{background:var(--accent);color:var(--accent-fg)}
+.act-row{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:12px;align-items:center;width:100%;text-align:left;padding:11px 16px;border:0;border-top:1px solid var(--line);background:transparent;cursor:pointer}
+.act-row:first-child{border-top:0}
+.act-row .t{display:block;font-weight:600;overflow-wrap:anywhere}
+.act-row .s{display:block;font-size:13px;color:var(--muted)}
+.act-row svg{width:20px;height:20px}
+.ic-ok{color:var(--ok)} .ic-stop{color:var(--stop)} .ic-acc{color:var(--accent)}
+.day-head{display:grid;gap:8px}
+.day-top{display:flex;justify-content:space-between;align-items:baseline;gap:12px}
+.bar-p{height:8px;border-radius:4px;background:var(--surface-2);overflow:hidden}
+.bar-p i{display:block;height:100%;background:var(--accent);border-radius:4px;transition:width .3s}
+.done-btn{background:var(--accent);border-color:var(--accent);color:var(--accent-fg);min-width:78px;min-height:48px;font-size:18px}
+.all-done{margin:4px 16px 14px;padding:14px 16px;border-radius:12px;background:var(--ok-soft);display:grid;gap:4px}
+.all-done b{color:var(--ok);font-family:var(--display);font-size:19px;letter-spacing:.03em;text-transform:uppercase}
+.all-done span{font-size:14px}
+.done-list{display:grid;gap:8px;border-top:1px solid var(--line)}
+.done-row{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:10px;align-items:center;font-size:14px;color:var(--muted)}
+.done-row svg{width:18px;height:18px;color:var(--ok)}
+.strike{text-decoration:line-through}
+.later{border-top:1px solid var(--line);padding:12px 16px}
+.later summary{cursor:pointer;color:var(--accent);font-family:var(--display);font-weight:600;text-transform:uppercase;letter-spacing:.04em}
+.later[open] summary{margin-bottom:6px}
+.later-row{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px;align-items:center;padding:10px 0;border-top:1px solid var(--line);font-size:14px}
+.later-r{display:flex;gap:6px;align-items:center;flex-wrap:wrap;justify-content:flex-end}
+.alert-row{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:12px;align-items:center;width:100%;text-align:left;padding:12px 14px;border:0;border-radius:var(--radius);background:var(--stop-soft);cursor:pointer}
+.alert-row .t{display:block;font-weight:600;color:var(--stop)}
+.alert-row .s{display:block;font-size:13px}
+.alert-row .go{font-family:var(--display);font-weight:700;color:var(--stop);letter-spacing:.05em}
+.dot{width:12px;height:12px;border-radius:6px;background:var(--stop);box-shadow:0 0 10px var(--stop);flex:none}
+.member{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:6px 12px;align-items:center;padding:11px 16px;border-top:1px solid var(--line)}
+.member:first-child{border-top:0}
+.member .av{width:38px;height:38px;border-radius:19px;background:var(--surface-2);display:flex;align-items:center;justify-content:center;font-weight:600}
+.member .n{font-weight:600}
+.member .a{display:block;font-size:13px;color:var(--muted)}
+.member .a.on{color:var(--ok)}
+.member .cnt{text-align:right}
+.member .cnt b{display:block;font-family:var(--mono);font-size:17px;font-weight:500}
+.member .cnt span{font-size:11px;color:var(--muted)}
+.member .role-act{grid-column:2 / span 2}
+.role-badge{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.05em;color:var(--accent);margin-left:6px}
+.alert-bar{position:fixed;top:calc(env(safe-area-inset-top,0px) + 10px);left:50%;transform:translateX(-50%);z-index:45;width:min(560px,calc(100% - 24px));display:grid;grid-template-columns:auto minmax(0,1fr) auto auto;gap:10px;align-items:center;padding:12px 14px;border-radius:var(--radius);background:var(--stop-soft);border:1px solid var(--stop);box-shadow:0 10px 30px rgba(0,0,0,.5)}
+.alert-bar b{display:block;color:var(--stop)}
+.alert-bar .s{display:block;font-size:13px}
+.pick{display:grid}
+#al-notif{white-space:normal;text-align:left;max-width:100%}
 </style>
 </head>
 <body data-stage="loading">
@@ -291,14 +337,15 @@ body:not([data-stage="app"]) .tabs,body:not([data-stage="app"]) .me{display:none
       <svg class="word" viewBox="-2 -2 288 104" aria-hidden="true"><g fill="none" stroke="currentColor" stroke-width="19" stroke-linejoin="miter"><path d="M45.39 15.02 A21.50 21.50 0 0 0 9.50 31.00 L9.50 69.00 A21.50 21.50 0 0 0 45.39 84.98"/><path d="M83.50 31.00 A21.50 21.50 0 0 1 126.50 31.00 L126.50 69.00 A21.50 21.50 0 0 1 83.50 69.00 Z"/><path d="M157.50 100 L157.50 9.50 L180.00 9.50 A20.50 20.50 0 0 1 180.00 50.50 L157.50 50.50"/><path d="M231.50 31.00 A21.50 21.50 0 0 1 274.50 31.00 L274.50 69.00 A21.50 21.50 0 0 1 231.50 69.00 Z"/></g></svg>
     </div>
     <nav class="tabs" aria-label="Sections">
-      <button class="tab" data-go="tableau" type="button">Tableau de bord</button>
-      <button class="tab" data-go="machines" type="button">Machines</button>
-      <button class="tab" data-go="etiquettes" type="button">Étiquettes QR</button>
-      <button class="tab" data-go="atelier" type="button">Atelier</button>
+      <button class="tab" data-go="tableau" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg><span>Tableau</span></button>
+      <button class="tab" data-go="machines" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M4.9 19.1L7 17M17 7l2.1-2.1"/></svg><span>Machines</span></button>
+      <button class="tab" data-go="etiquettes" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><path d="M14 14h3v3h-3zM20 14v7M14 20h3"/></svg><span>QR</span></button>
+      <button class="tab" data-go="moi" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21c1-4 4.2-6 8-6s7 2 8 6"/></svg><span>Moi</span></button>
+      <button class="tab" data-go="responsable" type="button" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 3l8 3v6c0 4.5-3.4 8-8 9-4.6-1-8-4.5-8-9V6z"/><path d="M8.5 12l2.5 2.5 4.5-5"/></svg><span>Responsable</span></button>
     </nav>
-    <label class="me" for="me-name"><span>Vous</span><input id="me-name" placeholder="Votre nom" maxlength="40" autocomplete="name"></label>
   </div>
 </header>
+<div id="alert-bar" class="alert-bar" role="alert" hidden><span class="dot"></span><div class="min0"><b id="ab-title"></b><span class="s" id="ab-sub"></span></div><button class="btn sm" type="button" data-act="ab-see">Voir</button><button class="btn sm ghost" type="button" data-act="ab-close" aria-label="Fermer l'alerte">✕</button></div>
 
 <main class="wrap">
   <div id="notice" class="notice" hidden></div>
@@ -323,6 +370,9 @@ body:not([data-stage="app"]) .tabs,body:not([data-stage="app"]) .me{display:none
   <!-- Choix de l'atelier -->
   <section id="v-onboard" class="view" aria-labelledby="h-onboard" hidden>
     <div class="page-h"><h1 id="h-onboard">Votre atelier</h1><p class="lede">Créez l'espace de votre atelier, ou rejoignez celui de vos collègues avec leur code d'invitation.</p></div>
+    <div class="panel panel-b form">
+      <label for="o-prenom">Votre prénom (affiché à vos collègues)<input id="o-prenom" maxlength="40" autocomplete="given-name" placeholder="ex. Karim"></label>
+    </div>
     <div class="grid2">
       <form id="f-create" class="panel panel-b form">
         <h2>Créer un atelier</h2>
@@ -338,21 +388,46 @@ body:not([data-stage="app"]) .tabs,body:not([data-stage="app"]) .me{display:none
     <p class="hint">Connecté en tant que <span id="o-email"></span>. <button class="btn sm ghost" type="button" data-act="logout">Se déconnecter</button></p>
   </section>
 
-  <!-- Atelier -->
-  <section id="v-atelier" class="view" aria-labelledby="at-nom" hidden>
-    <div class="page-h"><p class="eyebrow">Atelier</p><h1 id="at-nom">Atelier</h1></div>
+  <!-- Moi -->
+  <section id="v-moi" class="view" aria-labelledby="moi-nom" hidden>
+    <div class="head-l"><span class="avatar" id="moi-avatar" aria-hidden="true"></span><div class="page-h"><h1 id="moi-nom">Mon espace</h1><p class="lede" id="moi-sub"></p></div></div>
+    <div class="tiles tiles-3" id="moi-tiles"></div>
+    <div class="chips" role="group" aria-label="Filtrer mes actions">
+      <button class="chip" type="button" data-filter="tout">Tout</button>
+      <button class="chip" type="button" data-filter="entretien">Entretiens</button>
+      <button class="chip" type="button" data-filter="panne">Pannes</button>
+      <button class="chip" type="button" data-filter="releve">Relevés liquide</button>
+    </div>
+    <div id="moi-list" class="stack-y"></div>
+    <div class="panel">
+      <div class="panel-h"><h2>Mon compte</h2></div>
+      <form id="f-profil" class="panel-b form">
+        <label for="pf-nom">Prénom affiché dans l'atelier<input id="pf-nom" required maxlength="40" autocomplete="given-name"></label>
+        <p class="hint">Connecté en tant que <b id="moi-email"></b></p>
+        <div class="actions"><button type="button" class="btn ghost" data-act="logout">Se déconnecter</button><button class="btn primary" type="submit">Enregistrer</button></div>
+      </form>
+    </div>
+  </section>
+
+  <!-- Responsable -->
+  <section id="v-responsable" class="view" aria-labelledby="h-resp" hidden>
+    <div class="page-h"><p class="eyebrow" id="resp-atelier"></p><h1 id="h-resp">Espace responsable</h1></div>
+    <div id="resp-alerts" class="stack-y"></div>
+    <div class="panel"><div class="panel-h"><h2>Équipe</h2><span class="hint" id="resp-team-count"></span></div><div id="resp-team"></div></div>
+    <div class="panel"><div class="panel-h"><h2>Dernières actions</h2></div><ul class="hist" id="resp-feed"></ul></div>
+    <div class="panel">
+      <div class="panel-h"><h2>Alertes de panne</h2></div>
+      <div class="panel-b form">
+        <label class="check" for="al-email"><input type="checkbox" id="al-email"> <span>Recevoir un e-mail à chaque nouvelle panne</span></label>
+        <div class="actions start"><button type="button" class="btn sm" id="al-notif" data-act="notif-on">Activer les notifications sur cet appareil</button></div>
+        <p class="hint">Dans l'appli, une alerte rouge et un son préviennent les responsables dès qu'une panne est signalée. Les notifications de l'appareil s'affichent tant que COPO est ouvert, même en arrière-plan.</p>
+      </div>
+    </div>
     <div class="panel">
       <div class="panel-h"><h2>Inviter des collègues</h2></div>
       <div class="panel-b stack-y">
         <p>Chaque collègue crée son compte COPO, puis entre ce code pour rejoindre l'atelier :</p>
         <div class="qrrow"><span class="invite mono" id="at-code"></span><button class="btn sm" type="button" data-act="copy-code">Copier le code</button></div>
-      </div>
-    </div>
-    <div class="panel">
-      <div class="panel-h"><h2>Votre compte</h2></div>
-      <div class="panel-b stack-y">
-        <p>Connecté en tant que <b id="at-email"></b></p>
-        <div class="actions start"><button class="btn" type="button" data-act="logout">Se déconnecter</button></div>
       </div>
     </div>
   </section>
@@ -364,6 +439,11 @@ body:not([data-stage="app"]) .tabs,body:not([data-stage="app"]) .me{display:none
       <p class="lede" id="dash-date"></p>
     </div>
     <div class="tiles" id="dash-tiles"></div>
+    <button class="btn signal" type="button" id="dash-signal" data-act="dash-signal" hidden>Signaler une panne</button>
+    <div class="panel" id="dash-pick" hidden>
+      <div class="panel-h"><h2>Sur quelle machine ?</h2><button class="btn sm ghost" type="button" data-act="dash-pick-close">Annuler</button></div>
+      <div id="dash-pick-list" class="pick"></div>
+    </div>
     <div class="panel">
       <div class="panel-h"><h2>À traiter</h2><span class="hint" id="todo-count"></span></div>
       <div id="dash-todo"><p class="empty">Chargement du parc machines…</p></div>
@@ -617,7 +697,18 @@ const ago = iso => {
 const freqLabel = n => ({ 1: "Chaque jour", 7: "Chaque semaine", 14: "Toutes les 2 semaines", 30: "Chaque mois", 90: "Chaque trimestre", 180: "Tous les 6 mois", 365: "Chaque année" }[n] || `Tous les ${n} jours`);
 const pill = (text, tone) => `<span class="pill" data-tone="${tone}">${esc(text)}</span>`;
 const lamp = (tone, big) => `<span class="lamp${big ? " big" : ""}" data-tone="${tone}" aria-hidden="true"><i></i><i></i><i></i></span>`;
-const me = () => ($("#me-name").value || "").trim() || "Non renseigné";
+const myId = () => (S.user ? S.user.id : null);
+const me = () => (S.me && S.me.nom) || (S.user && S.user.email ? S.user.email.split("@")[0] : "Non renseigné");
+const isAdmin = () => !!(S.me && S.me.role === "admin");
+const fmtTime = iso => new Date(iso).toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" });
+const CHECK = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>';
+const dayLabel = iso => {
+  const d = dayDiff(ts(iso), Date.now());
+  if (d === 0) return "Aujourd'hui";
+  if (d === 1) return "Hier";
+  const t = new Date(iso).toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long" });
+  return t.charAt(0).toUpperCase() + t.slice(1);
+};
 const machineById = id => S.machines.find(m => m.id === id);
 const modelLine = m => [m.marque, m.modele].filter(Boolean).join(" ") || TYPES[m.type] || "";
 const sortedMachines = () => [...S.machines].sort((a, b) => String(a.nom).localeCompare(String(b.nom), "fr", { numeric: true }));
@@ -634,8 +725,9 @@ function toast(msg) {
 
 /* ---------- derived state ---------- */
 function taskDue(t) {
-  const base = ts(t.lastDone || t.createdAt);
-  const due = base + t.freq * DAY;
+  // Never done: daily and weekly checks are due right away, longer ones after one period.
+  const due = t.lastDone ? ts(t.lastDone) + t.freq * DAY
+    : (t.freq <= 7 ? ts(t.createdAt) : ts(t.createdAt) + t.freq * DAY);
   const left = dayDiff(Date.now(), due);
   let label, tone;
   if (left < 0) { label = `En retard de ${-left} j`; tone = "warn"; }
@@ -743,7 +835,7 @@ function render() {
   $("#v-auth").hidden = stage !== "auth";
   $("#v-onboard").hidden = stage !== "onboard";
   if (stage !== "app") {
-    ["tableau", "machines", "machine", "etiquettes", "atelier"].forEach(v => { $("#v-" + v).hidden = true; });
+    ["tableau", "machines", "machine", "etiquettes", "moi", "responsable"].forEach(v => { $("#v-" + v).hidden = true; });
     $("#example-banner").hidden = true;
     return;
   }
@@ -751,14 +843,16 @@ function render() {
     const on = b.dataset.go === (S.view === "machine" ? S.prev : S.view);
     if (on) b.setAttribute("aria-current", "page"); else b.removeAttribute("aria-current");
   });
-  ["tableau", "machines", "machine", "etiquettes", "atelier"].forEach(v => { $("#v-" + v).hidden = S.view !== v; });
+  ["tableau", "machines", "machine", "etiquettes", "moi", "responsable"].forEach(v => { $("#v-" + v).hidden = S.view !== v; });
+  $('.tab[data-go="responsable"]').hidden = !isAdmin();
   const hasEx = COLS.some(c => S[c].some(d => d.exemple));
   $("#example-banner").hidden = !hasEx;
   if (S.view === "tableau") renderDash();
   else if (S.view === "machines") renderMachines();
   else if (S.view === "machine") renderSheet();
   else if (S.view === "etiquettes") renderLabels();
-  else if (S.view === "atelier") renderAtelier();
+  else if (S.view === "moi") renderMoi();
+  else if (S.view === "responsable") renderResponsable();
   hydratePhotos();
 }
 
@@ -782,6 +876,11 @@ function renderDash() {
     tile(`${fmtNum(hours, 1)}<small> h</small>`, "Arrêt machines sur 30 jours", "neutral")
   ].join("");
 
+  $("#dash-signal").hidden = !ms.length;
+  $("#dash-pick-list").innerHTML = ms.map(m => {
+    const st = machineState(m);
+    return `<button class="row" type="button" data-open="${esc(m.id)}" data-signal="1">${lamp(st.tone)}<span class="min0"><span class="nm">${esc(m.nom)}</span><br><span class="sub">${esc(modelLine(m))}</span></span>${pill(st.label, st.tone)}</button>`;
+  }).join("");
   if (!ms.length) {
     $("#todo-count").textContent = "";
     $("#dash-todo").innerHTML = `<div class="empty stack-y"><p>Aucune machine pour l'instant. Ajoutez votre première machine : son plan d'entretien type est chargé automatiquement.</p><div class="actions start"><button class="btn primary" type="button" data-act="add-first">Ajouter une machine</button></div></div>`;
@@ -864,6 +963,11 @@ function renderSheet() {
   }
   body.hidden = false;
   if (S.filledFor !== m.id) fillSheetForms(m);
+  if (S.autoSignal) {
+    S.autoSignal = false;
+    $("#f-panne").hidden = false;
+    setTimeout(() => { $("#f-panne").scrollIntoView({ block: "start" }); $("#p-desc").focus({ preventScroll: true }); }, 60);
+  }
   const st = machineState(m);
   $("#ms-head").innerHTML = `<div class="head-l">${lamp(st.tone, true)}<div class="min0 page-h"><p class="eyebrow">${esc(TYPES[m.type] || "")}</p><h1>${esc(m.nom)}</h1><p class="lede">${esc(modelLine(m))}${m.emplacement ? " · " + esc(m.emplacement) : ""}</p></div></div>${pill(st.label, st.tone)}`;
 
@@ -883,13 +987,25 @@ function renderSheet() {
     </div>`;
   }).join("") : `<p class="empty">Aucune panne en cours.</p>`;
 
-  // Tâches
-  const ts_ = tasksOf(m.id);
-  $("#ms-tasks").innerHTML = ts_.length ? ts_.map(({ t, d }) => `<div class="task">
-      <div class="min0"><div>${esc(t.label)}</div><div class="meta">${esc(freqLabel(t.freq))} · ${t.lastDone ? `fait le ${esc(fmtDate(t.lastDone))} par ${esc(t.lastBy || "Non renseigné")}` : "jamais fait"}</div></div>
-      ${pill(d.label, d.tone)}
-      <div class="t-act"><button class="btn sm" type="button" data-act="done" data-id="${esc(t.id)}">Fait</button><button class="btn sm ghost" type="button" data-act="task-del" data-id="${esc(t.id)}">Retirer</button></div>
-    </div>`).join("") : `<p class="empty">Aucune tâche d'entretien. Ajoutez-en une ci-dessous.</p>`;
+  // Tâches : à faire aujourd'hui, faites aujourd'hui, à venir
+  const all = tasksOf(m.id);
+  const today = sod(Date.now());
+  const isDoneToday = x => x.t.lastDone && sod(ts(x.t.lastDone)) === today;
+  const doneToday = all.filter(isDoneToday);
+  const todo = all.filter(x => !isDoneToday(x) && x.d.left <= 0);
+  const later = all.filter(x => !isDoneToday(x) && x.d.left > 0);
+  const dayTotal = todo.length + doneToday.length;
+  const pct = dayTotal ? Math.round(doneToday.length / dayTotal * 100) : 100;
+  const next = later[0];
+  $("#ms-tasks").innerHTML = !all.length ? `<p class="empty">Aucune tâche d'entretien. Ajoutez-en une ci-dessous.</p>` : `
+    <div class="panel-b day-head"><div class="day-top"><span class="mini">Entretien du jour</span><span class="mono">${doneToday.length} / ${dayTotal}</span></div><div class="bar-p"><i style="width:${pct}%"></i></div></div>
+    ${todo.length ? todo.map(({ t, d }) => `<div class="task">
+      <div class="min0"><div>${esc(t.label)}</div><div class="meta">${esc(freqLabel(t.freq))}${d.left < 0 ? ` · <span class="tone-warn">en retard de ${-d.left} j</span>` : ""}</div></div>
+      <span></span>
+      <div class="t-act"><button class="btn done-btn" type="button" data-act="done" data-id="${esc(t.id)}">Fait</button></div>
+    </div>`).join("") : `<div class="all-done"><b>Tout est fait pour aujourd'hui</b>${next ? `<span>Prochaine tâche : ${esc(next.t.label.charAt(0).toLowerCase() + next.t.label.slice(1))}, ${esc(next.d.label.toLowerCase())}.</span>` : ""}</div>`}
+    ${doneToday.length ? `<div class="panel-b done-list"><span class="mini">Fait aujourd'hui</span>${doneToday.map(({ t }) => `<div class="done-row">${CHECK}<span class="min0 strike">${esc(t.label)}</span><span class="mono">${esc(fmtTime(t.lastDone))} · ${esc(t.lastBy || "")}</span></div>`).join("")}</div>` : ""}
+    ${later.length ? `<details class="later"${S.laterOpen ? " open" : ""}><summary>À venir (${later.length})</summary>${later.map(({ t, d }) => `<div class="later-row"><span class="min0">${esc(t.label)}<br><span class="hint">${esc(freqLabel(t.freq))}${t.lastDone ? ` · fait le ${esc(fmtDate(t.lastDone))} par ${esc(t.lastBy || "")}` : ""}</span></span><span class="later-r">${pill(d.label, "neutral")}<button class="btn sm ghost" type="button" data-act="task-del" data-id="${esc(t.id)}">Retirer</button></span></div>`).join("")}</details>` : ""}`;
 
   // Liquide
   const c = coolState(m);
@@ -970,6 +1086,168 @@ function coolChart(m, rs) {
 }
 
 const LABEL_MARK = "<svg class=\"l-mark\" viewBox=\"0 0 100 100\" aria-hidden=\"true\"><defs><radialGradient id=\"lbl-g\" gradientUnits=\"userSpaceOnUse\" cx=\"44.22\" cy=\"58.18\" r=\"45.35\"><stop offset=\"0.0\" stop-color=\"#f6d98a\"/><stop offset=\"0.16\" stop-color=\"#e8ac45\"/><stop offset=\"0.36\" stop-color=\"#c06a2b\"/><stop offset=\"0.52\" stop-color=\"#8a4a86\"/><stop offset=\"0.68\" stop-color=\"#4a68b4\"/><stop offset=\"0.86\" stop-color=\"#2a63a8\"/><stop offset=\"1.0\" stop-color=\"#1d4f86\"/></radialGradient></defs><path d=\"M40.79 59.59 L40.81 59.75 L40.81 59.91 L40.80 60.07 L40.81 60.23 L40.81 60.39 L40.82 60.55 L40.84 60.72 L40.86 60.89 L40.89 61.06 L40.93 61.23 L40.98 61.40 L41.03 61.58 L41.09 61.75 L41.16 61.93 L41.23 62.10 L41.32 62.28 L41.41 62.45 L41.52 62.63 L41.63 62.80 L41.75 62.97 L41.88 63.14 L42.02 63.31 L42.17 63.47 L42.33 63.63 L42.50 63.79 L42.68 63.94 L42.86 64.08 L43.06 64.22 L43.26 64.36 L43.47 64.49 L43.69 64.61 L43.92 64.72 L44.16 64.83 L44.40 64.92 L44.66 65.01 L44.92 65.09 L45.18 65.16 L45.46 65.22 L45.74 65.26 L46.02 65.30 L46.31 65.33 L46.61 65.34 L46.90 65.34 L47.21 65.33 L47.51 65.31 L47.82 65.27 L48.13 65.22 L48.45 65.16 L48.76 65.08 L49.08 64.99 L49.39 64.89 L49.70 64.77 L50.02 64.64 L50.33 64.49 L50.64 64.33 L50.94 64.15 L51.24 63.96 L51.54 63.75 L51.83 63.53 L52.11 63.30 L52.39 63.05 L52.66 62.79 L52.92 62.51 L53.17 62.22 L53.42 61.92 L53.65 61.61 L53.88 61.28 L54.09 60.94 L54.29 60.58 L54.48 60.22 L54.65 59.85 L54.81 59.46 L54.96 59.06 L55.09 58.66 L55.21 58.24 L55.31 57.82 L55.40 57.39 L55.46 56.95 L55.51 56.51 L55.55 56.06 L55.56 55.60 L55.56 55.14 L55.54 54.68 L55.49 54.21 L55.43 53.75 L55.35 53.28 L55.25 52.81 L55.13 52.34 L55.00 51.87 L54.84 51.40 L54.66 50.94 L54.46 50.47 L54.24 50.02 L54.00 49.57 L53.74 49.12 L53.46 48.69 L53.16 48.26 L52.84 47.84 L52.50 47.43 L52.14 47.03 L51.76 46.64 L51.37 46.27 L50.96 45.91 L50.53 45.56 L50.08 45.23 L49.62 44.91 L49.14 44.61 L48.64 44.33 L48.13 44.06 L47.61 43.81 L47.08 43.59 L46.53 43.38 L45.96 43.19 L45.39 43.03 L44.81 42.89 L44.22 42.77 L43.62 42.67 L43.01 42.59 L42.40 42.54 L41.77 42.52 L41.15 42.52 L40.52 42.54 L39.89 42.59 L39.25 42.67 L38.62 42.77 L37.99 42.89 L37.35 43.05 L36.72 43.23 L36.10 43.43 L35.47 43.67 L34.86 43.92 L34.25 44.21 L33.65 44.52 L33.05 44.85 L32.47 45.22 L31.90 45.60 L31.34 46.02 L30.80 46.45 L30.27 46.91 L29.75 47.40 L29.25 47.90 L28.77 48.43 L28.31 48.99 L27.87 49.56 L27.44 50.15 L27.04 50.77 L26.67 51.40 L26.31 52.05 L25.98 52.72 L25.68 53.41 L25.40 54.11 L25.14 54.82 L24.92 55.55 L24.72 56.29 L24.55 57.05 L24.41 57.81 L24.30 58.58 L24.22 59.37 L24.17 60.15 L24.15 60.95 L24.17 61.74 L24.21 62.55 L24.29 63.35 L24.40 64.15 L24.54 64.96 L24.72 65.76 L24.92 66.55 L25.16 67.35 L25.44 68.13 L25.74 68.91 L26.08 69.68 L26.45 70.45 L26.85 71.19 L27.29 71.93 L27.75 72.65 L28.25 73.36 L28.77 74.05 L29.33 74.72 L29.91 75.38 L30.52 76.01 L31.16 76.62 L31.83 77.21 L32.52 77.77 L33.24 78.31 L33.99 78.83 L34.75 79.31 L35.54 79.77 L36.35 80.19 L37.18 80.59 L38.03 80.96 L38.90 81.29 L39.78 81.59 L40.68 81.86 L41.59 82.09 L42.52 82.28 L43.46 82.44 L44.40 82.57 L45.36 82.65 L46.32 82.70 L47.29 82.71 L48.26 82.69 L49.24 82.62 L50.21 82.51 L51.19 82.37 L52.16 82.19 L53.13 81.96 L54.10 81.70 L55.05 81.40 L56.00 81.06 L56.94 80.68 L57.87 80.26 L58.78 79.81 L59.68 79.32 L60.56 78.78 L61.43 78.22 L62.27 77.61 L63.10 76.97 L63.90 76.30 L64.68 75.59 L65.43 74.85 L66.15 74.08 L66.85 73.27 L67.52 72.44 L68.16 71.57 L68.76 70.68 L69.33 69.76 L69.87 68.81 L70.37 67.84 L70.83 66.85 L71.26 65.84 L71.65 64.80 L72.00 63.75 L72.30 62.68 L72.57 61.59 L72.80 60.49 L72.98 59.38 L73.11 58.26 L73.21 57.13 L73.26 55.99 L73.26 54.84 L73.22 53.70 L73.14 52.55 L73.00 51.40 L72.83 50.25 L72.60 49.10 L72.33 47.96 L72.02 46.83 L71.66 45.71 L71.25 44.60 L70.80 43.50 L70.30 42.41 L69.76 41.34 L69.18 40.29 L68.55 39.26 L67.88 38.25 L67.17 37.27 L66.41 36.31 L65.62 35.38 L64.79 34.48 L63.92 33.60 L62.35 31.96 L60.79 30.31 L59.23 28.67 L57.67 27.02 L56.10 25.38 L54.54 23.74 L52.98 22.09 L51.42 20.45 L49.85 18.80 L48.29 17.16 L46.73 15.51 L40.73 9.48 L53.93 5.00 L55.59 6.54 L57.26 8.09 L58.92 9.63 L60.58 11.17 L62.24 12.72 L63.91 14.26 L65.57 15.81 L67.23 17.35 L68.89 18.89 L70.55 20.44 L72.22 21.98 L73.88 23.52 L75.12 24.82 L76.30 26.16 L77.42 27.54 L78.49 28.95 L79.50 30.41 L80.44 31.90 L81.32 33.42 L82.14 34.97 L82.90 36.54 L83.59 38.14 L84.21 39.76 L84.77 41.39 L85.26 43.05 L85.69 44.71 L86.04 46.39 L86.33 48.07 L86.56 49.75 L86.71 51.44 L86.80 53.13 L86.82 54.82 L86.77 56.49 L86.66 58.16 L86.49 59.82 L86.25 61.47 L85.94 63.09 L85.57 64.70 L85.14 66.29 L84.65 67.86 L84.11 69.40 L83.50 70.91 L82.83 72.39 L82.11 73.83 L81.34 75.25 L80.51 76.62 L79.63 77.96 L78.71 79.26 L77.73 80.52 L76.71 81.73 L75.65 82.90 L74.55 84.01 L73.41 85.09 L72.23 86.11 L71.01 87.08 L69.76 88.00 L68.48 88.86 L67.18 89.67 L65.84 90.43 L64.48 91.13 L63.11 91.77 L61.71 92.36 L60.29 92.89 L58.86 93.35 L57.42 93.77 L55.97 94.12 L54.51 94.41 L53.05 94.65 L51.58 94.82 L50.11 94.94 L48.65 95.00 L47.19 95.00 L45.74 94.94 L44.29 94.83 L42.86 94.66 L41.44 94.43 L40.04 94.15 L38.65 93.82 L37.29 93.43 L35.94 92.99 L34.62 92.49 L33.33 91.95 L32.06 91.36 L30.82 90.73 L29.61 90.04 L28.44 89.32 L27.30 88.54 L26.20 87.73 L25.13 86.88 L24.11 85.99 L23.12 85.07 L22.17 84.11 L21.27 83.11 L20.41 82.09 L19.60 81.04 L18.83 79.96 L18.11 78.85 L17.44 77.73 L16.81 76.58 L16.23 75.41 L15.70 74.23 L15.23 73.03 L14.80 71.82 L14.42 70.60 L14.09 69.37 L13.81 68.13 L13.59 66.89 L13.41 65.64 L13.28 64.40 L13.21 63.15 L13.18 61.91 L13.20 60.68 L13.27 59.45 L13.39 58.24 L13.56 57.03 L13.78 55.84 L14.04 54.66 L14.34 53.50 L14.69 52.36 L15.09 51.23 L15.52 50.13 L16.00 49.06 L16.52 48.01 L17.07 46.98 L17.67 45.98 L18.30 45.01 L18.96 44.08 L19.66 43.17 L20.39 42.30 L21.16 41.46 L21.95 40.66 L22.76 39.89 L23.61 39.16 L24.48 38.47 L25.37 37.81 L26.28 37.20 L27.21 36.62 L28.15 36.09 L29.12 35.60 L30.09 35.15 L31.08 34.74 L32.08 34.37 L33.09 34.04 L34.11 33.76 L35.12 33.52 L36.15 33.32 L37.17 33.16 L38.20 33.05 L39.22 32.97 L40.24 32.94 L41.25 32.95 L42.26 33.00 L43.26 33.09 L44.25 33.22 L45.23 33.39 L46.19 33.59 L47.14 33.83 L48.07 34.11 L48.99 34.43 L49.89 34.78 L50.76 35.16 L51.62 35.58 L52.45 36.03 L53.26 36.50 L54.05 37.01 L54.81 37.55 L55.54 38.11 L56.24 38.70 L56.92 39.31 L57.57 39.95 L58.18 40.60 L58.77 41.28 L59.32 41.98 L59.85 42.69 L60.34 43.42 L60.79 44.16 L61.22 44.92 L61.61 45.69 L61.96 46.46 L62.28 47.25 L62.57 48.05 L62.82 48.85 L63.04 49.65 L63.23 50.46 L63.38 51.26 L63.49 52.07 L63.57 52.88 L63.62 53.68 L63.64 54.48 L63.62 55.27 L63.57 56.06 L63.49 56.84 L63.38 57.61 L63.24 58.36 L63.07 59.11 L62.86 59.84 L62.63 60.56 L62.38 61.26 L62.09 61.95 L61.78 62.62 L61.45 63.27 L61.09 63.90 L60.71 64.51 L60.31 65.10 L59.88 65.67 L59.44 66.22 L58.98 66.74 L58.50 67.24 L58.00 67.71 L57.49 68.16 L56.97 68.59 L56.43 68.98 L55.88 69.36 L55.32 69.70 L54.75 70.02 L54.17 70.32 L53.59 70.58 L53.00 70.82 L52.40 71.03 L51.81 71.22 L51.21 71.37 L50.61 71.50 L50.01 71.61 L49.41 71.69 L48.82 71.74 L48.23 71.76 L47.64 71.77 L47.06 71.74 L46.49 71.69 L45.93 71.62 L45.37 71.52 L44.83 71.40 L44.29 71.26 L43.77 71.10 L43.26 70.92 L42.77 70.71 L42.29 70.49 L41.82 70.25 L41.37 69.99 L40.94 69.72 L40.52 69.43 L40.13 69.12 L39.75 68.80 L39.38 68.47 L39.04 68.12 L38.72 67.76 L38.42 67.40 L38.14 67.02 L37.88 66.64 L37.64 66.25 L37.42 65.85 L37.22 65.45 L37.04 65.05 L36.89 64.64 L36.75 64.23 L36.64 63.82 L36.55 63.41 L36.47 63.00 L36.42 62.60 L36.39 62.19 L36.38 61.80 L36.39 61.40 L36.42 61.02 L36.47 60.64 L36.54 60.27 L36.62 59.91 L36.72 59.55 L36.85 59.22 L36.98 58.89 L37.14 58.58 L37.32 58.28 L37.53 58.01 Z\" fill=\"url(#lbl-g)\"/><path d=\"M47.65 35.53 L46.77 35.26 L45.88 35.03 L44.97 34.84 L44.05 34.68 L43.13 34.56 L42.19 34.47 L41.24 34.42 L40.28 34.41 L39.32 34.44 L38.36 34.51 L37.39 34.62 L36.43 34.76 L35.46 34.95 L34.50 35.18 L33.54 35.45 L32.59 35.75 L31.64 36.10 L30.71 36.48 L29.78 36.91 L28.87 37.38 L27.98 37.88 L27.10 38.42 L26.23 39.00 L25.39 39.62 L24.57 40.28 L23.77 40.97 L22.99 41.69 L22.24 42.46 L21.52 43.25 L20.83 44.08 L20.16 44.94 L19.53 45.82 L18.93 46.74 L18.37 47.69 L17.84 48.66 L17.34 49.66 L16.89 50.68 L16.48 51.73 L16.10 52.80 L15.77 53.88 L15.47 54.99 L15.23 56.11 L15.02 57.24 L14.86 58.39 L14.75 59.55 L14.68 60.72 L14.65 61.89 L14.68 63.07 L14.75 64.26 L14.87 65.44 L15.04 66.63 L15.25 67.81 L15.52 69.00 L15.83 70.17 L16.19 71.34 L16.60 72.49 L17.05 73.64 L17.56 74.77 L18.11 75.88 L18.71 76.98 L19.35 78.06 L20.04 79.11 L20.77 80.15 L21.55 81.15 L22.37 82.13 L23.23 83.08 L24.14 84.00 L25.08 84.89 L26.06 85.74 L27.08 86.55 L28.14 87.33 L29.23 88.07 L30.35 88.77 L31.51 89.42 L32.69 90.03 L33.91 90.60 L35.15 91.12 L36.41 91.59 L37.70 92.01 L39.01 92.39 L40.34 92.71 L41.69 92.98 L43.05 93.20 L44.42 93.36 L45.81 93.47 L47.20 93.53 L48.60 93.53 L50.01 93.47 L51.42 93.36 L52.83 93.19 L54.23 92.97 L55.63 92.68 L57.03 92.35 L58.41 91.95 L59.79 91.50 L61.15 90.99 L62.49 90.43 L63.82 89.81 L65.13 89.14 L66.41 88.41 L67.67 87.63 L68.90 86.80 L70.10 85.92 L71.27 84.98 L72.41 84.00 L73.51 82.97 L74.57 81.89 L75.60 80.77 L76.58 79.60 L77.52 78.39 L78.41 77.14 L79.25 75.85 L80.05 74.53 L80.80 73.16 L81.49 71.77 L82.14 70.34 L82.72 68.89 L83.25 67.40 L83.73 65.89 L84.14 64.36 L84.50 62.81 L84.79 61.24 L85.02 59.65 L85.19 58.05 L85.30 56.44 L85.35 54.82 L85.33 53.19 L85.24 51.56 L85.09 49.93 L84.88 48.30 L84.60 46.68 L84.25 45.06 L83.84 43.45 L83.37 41.85 L82.83 40.27 L82.23 38.71 L81.56 37.16 L80.83 35.64 L80.04 34.14 L79.19 32.67 L78.27 31.23 L77.30 29.83 L76.27 28.45 L75.18 27.12 L74.04 25.83 L72.84 24.57 L71.18 23.03 L69.52 21.48 L67.86 19.94 L66.19 18.40 L64.53 16.85 L62.87 15.31 L61.21 13.77 L59.55 12.22 L57.88 10.68 L56.22 9.14 L54.56 7.59 L52.90 6.05 L51.76 7.20 L53.41 8.76 L55.06 10.31 L56.70 11.87 L58.35 13.43 L60.00 14.98 L61.65 16.54 L63.30 18.10 L64.95 19.66 L66.60 21.21 L68.25 22.77 L69.90 24.33 L71.55 25.88 L72.70 27.08 L73.80 28.32 L74.84 29.60 L75.83 30.91 L76.76 32.25 L77.64 33.63 L78.46 35.04 L79.22 36.47 L79.92 37.93 L80.57 39.40 L81.15 40.90 L81.66 42.42 L82.12 43.94 L82.52 45.48 L82.85 47.03 L83.12 48.59 L83.33 50.15 L83.48 51.71 L83.56 53.27 L83.58 54.82 L83.54 56.37 L83.44 57.92 L83.28 59.45 L83.07 60.97 L82.79 62.47 L82.45 63.96 L82.06 65.42 L81.61 66.87 L81.10 68.29 L80.54 69.68 L79.93 71.05 L79.27 72.39 L78.56 73.69 L77.80 74.96 L77.00 76.20 L76.14 77.39 L75.25 78.55 L74.31 79.67 L73.34 80.75 L72.32 81.78 L71.27 82.77 L70.19 83.71 L69.07 84.60 L67.93 85.45 L66.75 86.25 L65.55 87.00 L64.33 87.69 L63.08 88.34 L61.81 88.93 L60.53 89.47 L59.23 89.96 L57.92 90.40 L56.60 90.78 L55.27 91.10 L53.93 91.38 L52.59 91.59 L51.24 91.76 L49.90 91.87 L48.55 91.93 L47.22 91.93 L45.88 91.88 L44.56 91.78 L43.25 91.62 L41.95 91.42 L40.66 91.17 L39.39 90.86 L38.14 90.51 L36.91 90.11 L35.70 89.66 L34.52 89.17 L33.36 88.63 L32.23 88.05 L31.12 87.43 L30.05 86.77 L29.01 86.07 L28.00 85.33 L27.02 84.55 L26.08 83.74 L25.18 82.90 L24.32 82.03 L23.49 81.12 L22.71 80.19 L21.96 79.24 L21.26 78.26 L20.60 77.25 L19.99 76.23 L19.39 75.19 L18.84 74.14 L18.34 73.08 L17.87 71.99 L17.46 70.90 L17.09 69.79 L16.76 68.67 L16.48 67.55 L16.25 66.42 L16.06 65.28 L15.92 64.15 L15.82 63.01 L15.77 61.87 L15.77 60.74 L15.81 59.62 L15.89 58.50 L16.02 57.39 L16.19 56.29 L16.41 55.20 L16.67 54.12 L16.96 53.07 L17.30 52.03 L17.68 51.00 L18.10 50.00 L18.55 49.02 L19.05 48.06 L19.57 47.13 L20.14 46.22 L20.73 45.34 L21.36 44.49 L22.02 43.67 L22.70 42.88 L23.42 42.12 L24.16 41.39 L24.93 40.70 L25.72 40.04 L26.53 39.41 L27.36 38.82 L28.22 38.27 L29.09 37.76 L29.97 37.28 L30.87 36.84 L31.78 36.44 L32.70 36.07 L33.64 35.75 L34.58 35.47 L35.52 35.22 L36.47 35.01 L37.43 34.85 L38.38 34.72 L39.34 34.63 L40.29 34.58 L41.24 34.57 L42.18 34.59 L43.12 34.66 L44.04 34.76 L44.96 34.90 L45.87 35.07 L46.77 35.28 L47.65 35.53 Z\" fill=\"#ffffff\" fill-opacity=\"0.42\"/></svg>";
+function myActions() {
+  const uid = myId(), nm = me();
+  const mine = (id, name) => (id ? id === uid : name === nm);
+  const out = [];
+  for (const i of S.interventions) if (mine(i.uid, i.par)) { const m = machineById(i.machineId); out.push({ kind: "entretien", t: i.date, title: i.label, sub: m ? m.nom : "Machine supprimée", mid: i.machineId }); }
+  for (const p of S.pannes) {
+    const m = machineById(p.machineId);
+    if (mine(p.uid, p.par)) out.push({ kind: "panne", t: p.createdAt, title: `Panne signalée : ${p.description}`, sub: m ? m.nom : "Machine supprimée", mid: p.machineId });
+    if (p.resolvedAt && mine(p.resolvedUid, p.resolvedBy)) out.push({ kind: "panne", t: p.resolvedAt, title: `Panne clôturée : ${p.resolution || ""}`, sub: m ? m.nom : "Machine supprimée", mid: p.machineId, ok: true });
+  }
+  for (const r of S.coolant) if (mine(r.uid, r.par)) { const m = machineById(r.machineId); out.push({ kind: "releve", t: r.date, title: `Relevé liquide : ${fmtNum(r.conc)} %`, sub: m ? m.nom : "Machine supprimée", mid: r.machineId }); }
+  return out.sort((a, b) => ts(b.t) - ts(a.t));
+}
+
+function renderMoi() {
+  if (!S.atelier) return;
+  const nm = me();
+  $("#moi-nom").textContent = nm;
+  $("#moi-avatar").textContent = nm.charAt(0).toUpperCase();
+  $("#moi-sub").textContent = `${isAdmin() ? "Responsable" : "Opérateur"} · ${S.atelier.nom}`;
+  $("#moi-email").textContent = (S.user && S.user.email) || "";
+  const pf = $("#pf-nom");
+  if (document.activeElement !== pf) pf.value = (S.me && S.me.nom) || "";
+  const acts = myActions();
+  const week = Date.now() - 7 * DAY, month = Date.now() - 30 * DAY;
+  $("#moi-tiles").innerHTML = [
+    tile(acts.filter(a => a.kind === "entretien" && ts(a.t) > week).length, "Entretiens sur 7 jours", "neutral"),
+    tile(acts.filter(a => a.kind === "panne" && !a.ok && ts(a.t) > month).length, "Pannes signalées sur 30 jours", "neutral"),
+    tile(acts.filter(a => a.kind === "releve" && ts(a.t) > month).length, "Relevés sur 30 jours", "neutral")
+  ].join("");
+  const filter = S.moiFilter || "tout";
+  document.querySelectorAll("#v-moi .chip").forEach(c => c.setAttribute("aria-pressed", String(c.dataset.filter === filter)));
+  const list = acts.filter(a => filter === "tout" || a.kind === filter).slice(0, 80);
+  if (!list.length) {
+    $("#moi-list").innerHTML = `<p class="empty panel">Rien pour l'instant. Les entretiens que vous validez, les pannes que vous signalez et vos relevés apparaîtront ici.</p>`;
+    return;
+  }
+  const groups = [];
+  for (const a of list) {
+    const label = dayLabel(a.t);
+    if (!groups.length || groups[groups.length - 1].label !== label) groups.push({ label, items: [] });
+    groups[groups.length - 1].items.push(a);
+  }
+  const icon = a => a.kind === "panne" && !a.ok ? `<span class="ic-stop"><span class="dot" style="display:block;width:10px;height:10px;margin:5px"></span></span>` : a.kind === "releve" ? `<span class="ic-acc">${CHECK}</span>` : `<span class="ic-ok">${CHECK}</span>`;
+  $("#moi-list").innerHTML = groups.map(g => `<div class="stack-y"><h2>${esc(g.label)}</h2><div class="panel">${g.items.map(a => `<button class="act-row" type="button" data-open="${esc(a.mid)}">${icon(a)}<span class="min0"><span class="t">${esc(a.title)}</span><span class="s">${esc(a.sub)}</span></span><span class="mono hint">${esc(fmtTime(a.t))}</span></button>`).join("")}</div></div>`).join("");
+}
+
+function renderResponsable() {
+  if (!S.atelier) return;
+  if (!isAdmin()) { $("#resp-alerts").innerHTML = `<p class="empty panel">Cet espace est réservé aux responsables de l'atelier.</p>`; return; }
+  if (Date.now() - (S.membersAt || 0) > 30000) loadMembers();
+  $("#resp-atelier").textContent = S.atelier.nom;
+  $("#at-code").textContent = S.atelier.code_invitation;
+  const op = openPannes(null);
+  $("#resp-alerts").innerHTML = op.map(p => {
+    const m = machineById(p.machineId); if (!m) return "";
+    const g = GRAV[p.gravite] || GRAV.mineur;
+    return `<button class="alert-row" type="button" data-open="${esc(m.id)}"><span class="dot"></span><span class="min0"><span class="t">${esc(m.nom)} · ${esc(g.label)}</span><span class="s">${esc(p.description)} · signalée ${esc(ago(p.createdAt))} par ${esc(p.par || "")}</span></span><span class="go">VOIR</span></button>`;
+  }).join("");
+
+  const today = sod(Date.now());
+  const members = [...(S.members || [])].sort((a, b) => (a.role === b.role ? String(a.nom || "").localeCompare(String(b.nom || ""), "fr") : a.role === "admin" ? -1 : 1));
+  $("#resp-team-count").textContent = members.length ? `${members.length} personne${members.length > 1 ? "s" : ""}` : "";
+  $("#resp-team").innerHTML = members.length ? members.map(u => {
+    const name = u.nom || "Sans prénom";
+    const count = S.interventions.filter(i => i.uid === u.user_id && sod(ts(i.date)) === today).length;
+    const last = u.derniere_activite ? ts(u.derniere_activite) : 0;
+    const mins = last ? (Date.now() - last) / 60000 : Infinity;
+    const act = !last ? "Jamais connecté" : sod(last) !== today ? `Pas encore connecté aujourd'hui` : mins < 15 ? `● Actif ${ago(u.derniere_activite)}` : `Actif ${ago(u.derniere_activite)}`;
+    const meRow = u.user_id === myId();
+    const roleBtn = meRow ? "" : u.role === "admin"
+      ? `<button class="btn sm ghost" type="button" data-act="role" data-uid="${esc(u.user_id)}" data-role="membre">Retirer le rôle de responsable</button>`
+      : `<button class="btn sm ghost" type="button" data-act="role" data-uid="${esc(u.user_id)}" data-role="admin">Nommer responsable</button>`;
+    return `<div class="member"><span class="av" aria-hidden="true">${esc(name.charAt(0).toUpperCase())}</span><span class="min0"><span class="n">${esc(name)}${meRow ? " (vous)" : ""}</span>${u.role === "admin" ? `<span class="role-badge">Responsable</span>` : ""}<span class="a${mins < 15 ? " on" : ""}">${esc(act)}</span></span><span class="cnt"><b>${count}</b><span>entretiens aujourd'hui</span></span>${roleBtn ? `<span class="role-act">${roleBtn}</span>` : ""}</div>`;
+  }).join("") : `<p class="empty">Chargement de l'équipe…</p>`;
+
+  const feed = [];
+  for (const i of S.interventions) { const m = machineById(i.machineId); feed.push({ t: i.date, html: `<b>${esc(i.par || "")}</b> a validé « ${esc(i.label)} »${m ? ` · ${esc(m.nom)}` : ""}` }); }
+  for (const p of S.pannes) {
+    const m = machineById(p.machineId);
+    feed.push({ t: p.createdAt, html: `<b>${esc(p.par || "")}</b> a signalé une panne${m ? ` sur <b>${esc(m.nom)}</b>` : ""} : ${esc(p.description)}` });
+    if (p.resolvedAt) feed.push({ t: p.resolvedAt, html: `<b>${esc(p.resolvedBy || "")}</b> a clôturé la panne${m ? ` de <b>${esc(m.nom)}</b>` : ""}` });
+  }
+  for (const r of S.coolant) { const m = machineById(r.machineId); feed.push({ t: r.date, html: `<b>${esc(r.par || "")}</b> a fait un relevé liquide${m ? ` sur ${esc(m.nom)}` : ""} (${fmtNum(r.conc)} %)` }); }
+  feed.sort((a, b) => ts(b.t) - ts(a.t));
+  $("#resp-feed").innerHTML = feed.length ? feed.slice(0, 20).map(e => `<li><time datetime="${esc(e.t)}">${esc(fmtDateTime(e.t))}</time><span>${e.html}</span></li>`).join("") : `<li><span></span><span class="muted">Rien pour l'instant.</span></li>`;
+
+  const al = $("#al-email");
+  if (document.activeElement !== al) al.checked = !!(S.me && S.me.alertes_email !== false);
+  const nb = $("#al-notif");
+  if (!("Notification" in window)) { nb.hidden = true; }
+  else if (Notification.permission === "granted") { nb.textContent = "Notifications activées sur cet appareil"; nb.disabled = true; }
+  else if (Notification.permission === "denied") { nb.textContent = "Notifications bloquées sur cet appareil"; nb.disabled = true; }
+}
+
+async function loadMembers() {
+  if (!SB || !S.atelier) return;
+  S.membersAt = Date.now();
+  const { data, error } = await SB.from("membres").select("user_id, nom, role, derniere_activite, alertes_email").eq("atelier_id", S.atelier.id);
+  if (error) return;
+  S.members = data;
+  const mine = data.find(u => u.user_id === myId());
+  if (mine) S.me = { ...S.me, nom: mine.nom, role: mine.role, alertes_email: mine.alertes_email };
+  scheduleRender();
+}
+
+let lastPing = 0;
+function pingActivity(force) {
+  if (!SB || !S.atelier) return;
+  const n = Date.now();
+  if (!force && n - lastPing < 120000) return;
+  lastPing = n;
+  SB.rpc("ping_activite", { p_atelier: S.atelier.id }).then(() => {}, () => {});
+}
+
+function checkNewPannes() {
+  const first = !S.pannesSeen;
+  if (first) S.pannesSeen = new Set();
+  const fresh = [];
+  for (const p of S.pannes) {
+    if (S.pannesSeen.has(p.id)) continue;
+    S.pannesSeen.add(p.id);
+    if (!first && p.statut === "ouverte" && p.uid !== myId()) fresh.push(p);
+  }
+  if (fresh.length && isAdmin()) fresh.forEach(raiseAlert);
+}
+
+function raiseAlert(p) {
+  const m = machineById(p.machineId);
+  const g = GRAV[p.gravite] || GRAV.mineur;
+  const title = `Nouvelle panne · ${m ? m.nom : "Machine"} · ${g.short}`;
+  const sub = `${p.description} · signalée par ${p.par || "un collègue"}`;
+  $("#ab-title").textContent = title;
+  $("#ab-sub").textContent = sub;
+  $("#alert-bar").hidden = false;
+  S.alertMid = p.machineId;
+  beep();
+  if ("Notification" in window && Notification.permission === "granted") {
+    try { new Notification("COPO · " + title, { body: sub, icon: "icon-192.png", tag: p.id }); } catch (e) {}
+  }
+}
+
+function beep() {
+  try {
+    const AC = window.AudioContext || window.webkitAudioContext;
+    if (!AC) return;
+    S.ac = S.ac || new AC();
+    const ac = S.ac;
+    if (ac.state === "suspended") ac.resume();
+    [0, 0.28, 0.56].forEach((t, i) => {
+      const o = ac.createOscillator(), g = ac.createGain();
+      o.type = "square"; o.frequency.value = i % 2 ? 660 : 880;
+      o.connect(g); g.connect(ac.destination);
+      const t0 = ac.currentTime + t;
+      g.gain.setValueAtTime(0.0001, t0);
+      g.gain.exponentialRampToValueAtTime(0.18, t0 + 0.02);
+      g.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.22);
+      o.start(t0); o.stop(t0 + 0.24);
+    });
+  } catch (e) {}
+}
+
 function renderAtelier() {
   if (!S.atelier) return;
   $("#at-nom").textContent = S.atelier.nom;
@@ -1033,6 +1311,7 @@ async function compressPhoto(file) {
 
 /* ---------- writes ---------- */
 async function write(fn, okMsg) {
+  pingActivity();
   if (!S.db) { toast("Impossible d'enregistrer : la base de données n'est pas disponible dans cette vue."); return false; }
   try { await fn(); if (okMsg) toast(okMsg); return true; }
   catch (e) {
@@ -1078,7 +1357,7 @@ function openMachine(mid) {
 function route() {
   const h = decodeURIComponent(location.hash.slice(1));
   if (h.startsWith("m-")) { if (S.mid !== h || S.view !== "machine") openMachine(h); }
-  else if (["tableau", "machines", "etiquettes", "atelier"].includes(h) && S.view !== h) { if (S.view !== "machine") S.prev = S.view; S.view = h; S.mid = null; render(); }
+  else if (["tableau", "machines", "etiquettes", "moi", "responsable"].includes(h) && S.view !== h) { if (S.view !== "machine") S.prev = S.view; S.view = h; S.mid = null; render(); }
 }
 
 /* ---------- two-step confirm ---------- */
@@ -1094,7 +1373,7 @@ async function markDone(tid, btn) {
   const t = S.taches.find(x => x.id === tid); if (!t) return;
   const iso = new Date().toISOString(), by = me(), iid = rid("i");
   await busy(btn, () => write(async () => {
-    await S.db.doc("interventions/" + iid).set({ machineId: t.machineId, tacheId: t.id, label: t.label, date: iso, par: by });
+    await S.db.doc("interventions/" + iid).set({ machineId: t.machineId, tacheId: t.id, label: t.label, date: iso, par: by, uid: myId() });
     await S.db.doc("taches/" + t.id).update({ lastDone: iso, lastBy: by });
   }, `Entretien noté : ${t.label}`));
 }
@@ -1190,10 +1469,14 @@ async function buildSheetPng(ms, url) {
 
 /* ---------- events ---------- */
 document.addEventListener("click", async e => {
+  if (!S.ac) { try { const AC = window.AudioContext || window.webkitAudioContext; if (AC) S.ac = new AC(); } catch (err) {} }
+  else if (S.ac.state === "suspended") S.ac.resume();
+  const chip = e.target.closest("[data-filter]");
+  if (chip) { S.moiFilter = chip.dataset.filter; render(); return; }
   const goBtn = e.target.closest("[data-go]");
   if (goBtn) { go(goBtn.dataset.go); return; }
   const open = e.target.closest("[data-open]");
-  if (open) { openMachine(open.dataset.open); return; }
+  if (open) { if (open.dataset.signal) { S.autoSignal = true; $("#dash-pick").hidden = true; } openMachine(open.dataset.open); return; }
   const a = e.target.closest("[data-act]");
   if (!a) return;
   const act = a.dataset.act;
@@ -1233,6 +1516,26 @@ document.addEventListener("click", async e => {
     const txt = `${effectiveUrl()}#${S.mid}`;
     try { await navigator.clipboard.writeText(txt); toast("Lien copié"); }
     catch (err) { const u = $("#ms-qr .url"); if (u) { const r = document.createRange(); r.selectNodeContents(u); const s = getSelection(); s.removeAllRanges(); s.addRange(r); } toast("Copiez le lien sélectionné"); }
+  } else if (act === "dash-signal") {
+    const pk = $("#dash-pick"); pk.hidden = !pk.hidden;
+    if (!pk.hidden) pk.scrollIntoView({ block: "nearest", behavior: "smooth" });
+  } else if (act === "dash-pick-close") {
+    $("#dash-pick").hidden = true;
+  } else if (act === "ab-see") {
+    $("#alert-bar").hidden = true;
+    if (S.alertMid) openMachine(S.alertMid);
+  } else if (act === "ab-close") {
+    $("#alert-bar").hidden = true;
+  } else if (act === "notif-on") {
+    if ("Notification" in window) { try { await Notification.requestPermission(); } catch (err) {} render(); }
+  } else if (act === "role") {
+    if (!SB || !S.atelier) return;
+    await busy(a, async () => {
+      const { error } = await SB.rpc("definir_role", { p_atelier: S.atelier.id, p_user: a.dataset.uid, p_role: a.dataset.role });
+      if (error) { toast("Changement impossible : " + error.message); return; }
+      toast(a.dataset.role === "admin" ? "Nouveau responsable nommé" : "Rôle de responsable retiré");
+      await loadMembers();
+    });
   } else if (act === "signup") {
     await signUp(a);
   } else if (act === "logout") {
@@ -1254,6 +1557,15 @@ document.addEventListener("click", async e => {
 $("#lightbox").addEventListener("click", e => { if (e.target.id === "lightbox") { $("#lightbox").hidden = true; } });
 document.addEventListener("keydown", e => { if (e.key === "Escape" && !$("#lightbox").hidden) $("#lightbox").hidden = true; });
 $("#add-panel").addEventListener("toggle", () => { $("#add-panel").dataset.touched = "1"; });
+document.addEventListener("toggle", e => { if (e.target.classList && e.target.classList.contains("later")) S.laterOpen = e.target.open; }, true);
+$("#al-email").addEventListener("change", async e => {
+  if (!SB || !S.atelier) return;
+  const on = e.target.checked;
+  const { error } = await SB.rpc("maj_profil", { p_atelier: S.atelier.id, p_nom: null, p_alertes: on });
+  if (error) { toast("Réglage non enregistré : " + error.message); e.target.checked = !on; return; }
+  S.me = { ...S.me, alertes_email: on };
+  toast(on ? "Vous recevrez un e-mail à chaque panne" : "Alertes par e-mail désactivées");
+});
 $("#a-type").addEventListener("change", updatePlanCount);
 $("#c-brix").addEventListener("input", updateCalc);
 $("#c-fact").addEventListener("input", updateCalc);
@@ -1264,11 +1576,6 @@ $("#p-photo").addEventListener("change", e => {
   img.onload = () => URL.revokeObjectURL(u);
   img.src = u; img.hidden = false;
 });
-(() => {
-  const inp = $("#me-name");
-  try { inp.value = localStorage.getItem("copeau-nom") || ""; } catch (e) {}
-  inp.addEventListener("change", () => { try { localStorage.setItem("copeau-nom", inp.value.trim()); } catch (e) {} });
-})();
 
 document.addEventListener("submit", async e => {
   e.preventDefault();
@@ -1302,7 +1609,7 @@ document.addEventListener("submit", async e => {
       }
       const ok = await write(async () => {
         if (photoId) await S.db.doc("photos/" + photoId).set({ data, machineId: m.id, createdAt: iso });
-        await S.db.doc("pannes/" + pid).set({ machineId: m.id, gravite: grav, alarme: $("#p-alarme").value.trim(), description: desc, photoId, par: by, createdAt: iso, statut: "ouverte", resolvedAt: null, resolution: null, resolvedBy: null });
+        await S.db.doc("pannes/" + pid).set({ machineId: m.id, gravite: grav, alarme: $("#p-alarme").value.trim(), description: desc, photoId, par: by, uid: myId(), createdAt: iso, statut: "ouverte", resolvedAt: null, resolution: null, resolvedBy: null });
       }, "Panne signalée");
       if (ok) {
         if (photoId) S.photos.set(photoId, data);
@@ -1315,7 +1622,7 @@ document.addEventListener("submit", async e => {
   else if (f.id === "f-resolve" && S.resolving) {
     const text = $("#r-text").value.trim(); if (!text) return;
     const id = S.resolving, iso = new Date().toISOString(), by = me();
-    const ok = await busy(btn, () => write(() => S.db.doc("pannes/" + id).update({ statut: "resolue", resolvedAt: iso, resolution: text, resolvedBy: by }), "Panne clôturée"));
+    const ok = await busy(btn, () => write(() => S.db.doc("pannes/" + id).update({ statut: "resolue", resolvedAt: iso, resolution: text, resolvedBy: by, resolvedUid: myId() }), "Panne clôturée"));
     if (ok) { S.resolving = null; f.reset(); f.hidden = true; }
   }
 
@@ -1336,10 +1643,10 @@ document.addEventListener("submit", async e => {
     const bacTask = vid ? S.taches.find(t => t.machineId === m.id && /bac de liquide/i.test(t.label)) : null;
     const iid = rid("i");
     const ok = await busy(btn, () => write(async () => {
-      await S.db.doc("coolant/" + cid).set({ machineId: m.id, date: iso, brix, facteur: fact, conc, ph: isFinite(phV) ? phV : null, appoint: isFinite(appV) ? appV : null, vidange: vid, par: by });
+      await S.db.doc("coolant/" + cid).set({ machineId: m.id, date: iso, brix, facteur: fact, conc, ph: isFinite(phV) ? phV : null, appoint: isFinite(appV) ? appV : null, vidange: vid, par: by, uid: myId() });
       if (fact !== m.facteur) await S.db.doc("machines/" + m.id).update({ facteur: fact });
       if (bacTask) {
-        await S.db.doc("interventions/" + iid).set({ machineId: m.id, tacheId: bacTask.id, label: bacTask.label, date: iso, par: by });
+        await S.db.doc("interventions/" + iid).set({ machineId: m.id, tacheId: bacTask.id, label: bacTask.label, date: iso, par: by, uid: myId() });
         await S.db.doc("taches/" + bacTask.id).update({ lastDone: iso, lastBy: by });
       }
     }, `Relevé enregistré : ${fmtNum(conc)} %`));
@@ -1369,20 +1676,36 @@ document.addEventListener("submit", async e => {
   else if (f.id === "f-create") {
     if (!SB) return;
     const nom = $("#o-nom").value.trim(); if (!nom) return;
+    const prenom = $("#o-prenom").value.trim();
+    if (!prenom) { toast("Indiquez d'abord votre prénom."); $("#o-prenom").focus(); return; }
     await busy(btn, async () => {
-      const { data, error } = await SB.rpc("creer_atelier", { p_nom: nom });
+      const { error } = await SB.rpc("creer_atelier", { p_nom: nom, p_prenom: prenom });
       if (error) { toast("Création impossible : " + error.message); return; }
-      f.reset(); enterAtelier(data);
+      f.reset(); S.atelier = null; await startSession({ user: S.user });
     });
   }
 
   else if (f.id === "f-join") {
     if (!SB) return;
     const code = $("#o-code").value.trim().toUpperCase(); if (!code) return;
+    const prenom = $("#o-prenom").value.trim();
+    if (!prenom) { toast("Indiquez d'abord votre prénom."); $("#o-prenom").focus(); return; }
     await busy(btn, async () => {
-      const { data, error } = await SB.rpc("rejoindre_atelier", { p_code: code });
+      const { error } = await SB.rpc("rejoindre_atelier", { p_code: code, p_prenom: prenom });
       if (error) { toast(/invalide/i.test(error.message) ? "Code d'invitation introuvable. Vérifiez-le auprès de votre collègue." : "Impossible de rejoindre : " + error.message); return; }
-      f.reset(); enterAtelier(data);
+      f.reset(); S.atelier = null; await startSession({ user: S.user });
+    });
+  }
+
+  else if (f.id === "f-profil") {
+    if (!SB || !S.atelier) return;
+    const nom = $("#pf-nom").value.trim(); if (!nom) return;
+    await busy(btn, async () => {
+      const { error } = await SB.rpc("maj_profil", { p_atelier: S.atelier.id, p_nom: nom, p_alertes: null });
+      if (error) { toast("Prénom non enregistré : " + error.message); return; }
+      S.me = { ...S.me, nom };
+      toast("Prénom enregistré");
+      render();
     });
   }
 
@@ -1488,6 +1811,8 @@ function teardown() {
   S.db = null; S.atelier = null; S.dbState = "loading";
   COLS.forEach(c => { S[c] = []; S.loaded[c] = false; });
   S.photos.clear(); S.filledFor = null;
+  S.pannesSeen = null; S.members = null; S.membersAt = 0;
+  $("#alert-bar").hidden = true;
 }
 
 async function startSession(session) {
@@ -1495,23 +1820,23 @@ async function startSession(session) {
   if (!user) { teardown(); S.user = null; setStage("auth"); return; }
   if (S.user && S.user.id === user.id && S.atelier) return;
   S.user = user;
-  const { data, error } = await SB.from("membres").select("atelier_id, ateliers(id, nom, code_invitation)").eq("user_id", user.id).limit(1);
+  const { data, error } = await SB.from("membres").select("atelier_id, nom, role, alertes_email, ateliers(id, nom, code_invitation)").eq("user_id", user.id).limit(1);
   if (error) { showNotice("Impossible de charger votre atelier : " + error.message); return; }
   if (!data.length || !data[0].ateliers) { $("#o-email").textContent = user.email || ""; setStage("onboard"); return; }
-  enterAtelier(data[0].ateliers);
+  enterAtelier(data[0].ateliers, data[0]);
 }
 
-function enterAtelier(atelier) {
+function enterAtelier(atelier, meRow) {
   teardown();
   S.atelier = atelier;
-  const nameInput = $("#me-name");
-  if (!nameInput.value && S.user && S.user.email) nameInput.value = S.user.email.split("@")[0];
+  S.me = { nom: meRow && meRow.nom, role: (meRow && meRow.role) || "membre", alertes_email: meRow ? meRow.alertes_email !== false : true };
   const db = makeDb(SB, atelier.id);
   S.db = db; S.dbState = "on";
   for (const col of COLS) {
     db.collection(col).onSnapshot(snap => {
       S[col] = snap.docs.map(d => ({ id: d.id, ...d.data() }));
       S.loaded[col] = true;
+      if (col === "pannes") checkNewPannes();
       scheduleRender();
     }, () => {
       S.loaded[col] = true;
@@ -1524,7 +1849,9 @@ function enterAtelier(atelier) {
       .on("postgres_changes", { event: "*", schema: "public", table: "docs", filter: "atelier_id=eq." + atelier.id }, p => db.changed(p))
       .subscribe();
   } catch (e) { /* live updates are a bonus; the 60 s refresh below covers it */ }
-  S.poll = setInterval(() => { if (S.db === db) db.reloadAll().catch(() => {}); }, 60000);
+  S.poll = setInterval(() => { if (S.db === db) { db.reloadAll().catch(() => {}); if (isAdmin()) loadMembers(); } }, 60000);
+  pingActivity(true);
+  loadMembers();
   $("#notice").hidden = true;
   setStage("app");
   route();
