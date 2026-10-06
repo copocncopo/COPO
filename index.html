@@ -1,0 +1,1566 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>COPO</title>
+<meta name="description" content="COPO : maintenance des machines-outils pour ateliers d'usinage. Pannes, entretien préventif, liquide de coupe et étiquettes QR.">
+<meta name="theme-color" content="#141b21">
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icon-192.png">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Barlow:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: app shell. Sticky bar with tabs, one 1080px column. Machine state is encoded twice: a three-lamp signal tower (rouge / orange / vert) and a pill. */
+:root{
+  --bg:#e8ebea; --surface:#f8f9f8; --surface-2:#eef1f0; --line:#cfd6d9;
+  --fg:#18222b; --muted:#566570;
+  --accent:#00598c; --accent-fg:#ffffff; --accent-soft:#dcebf4;
+  --stop:#b3302a; --stop-2:#962520; --stop-soft:#f6dedb; --on-stop:#ffffff;
+  --warn:#94600f; --warn-soft:#f5e8cf;
+  --ok:#2a7146; --ok-soft:#dbeee2;
+  --lamp-off:#c3cbcf;
+  --paper:#ffffff; --ink:#121212;
+  --display:"Barlow Condensed","Arial Narrow",system-ui,sans-serif;
+  --body:"Barlow",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --mono:"IBM Plex Mono",ui-monospace,"SFMono-Regular",Menlo,monospace;
+  --radius:6px;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#111518; --surface:#192026; --surface-2:#212a32; --line:#313d47;
+    --fg:#e4e9ed; --muted:#98a7b3;
+    --accent:#5aaee0; --accent-fg:#06202f; --accent-soft:#16344a;
+    --stop:#f0766c; --stop-2:#dc5f55; --stop-soft:#3e1d1b; --on-stop:#1d0806;
+    --warn:#e3a94f; --warn-soft:#3a2c14;
+    --ok:#67c48d; --ok-soft:#173326;
+    --lamp-off:#3a4650;
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#111518; --surface:#192026; --surface-2:#212a32; --line:#313d47;
+  --fg:#e4e9ed; --muted:#98a7b3;
+  --accent:#5aaee0; --accent-fg:#06202f; --accent-soft:#16344a;
+  --stop:#f0766c; --stop-2:#dc5f55; --stop-soft:#3e1d1b; --on-stop:#1d0806;
+  --warn:#e3a94f; --warn-soft:#3a2c14;
+  --ok:#67c48d; --ok-soft:#173326;
+  --lamp-off:#3a4650;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+html{color-scheme:light}
+body{margin:0}
+[hidden]{display:none!important}
+img{max-width:100%}
+:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+body{background:var(--bg);color:var(--fg);font-family:var(--body);font-size:15px;line-height:1.45}
+h1,h2,h3,p{margin:0}
+h1{font-family:var(--display);font-weight:700;font-size:32px;line-height:1.05;letter-spacing:.01em;text-wrap:balance}
+h2{font-family:var(--display);font-weight:600;font-size:17px;text-transform:uppercase;letter-spacing:.07em;color:var(--muted)}
+.mini{font-family:var(--display);font-weight:600;font-size:15px;text-transform:uppercase;letter-spacing:.07em;color:var(--muted)}
+.mono{font-family:var(--mono)}
+.muted{color:var(--muted)}
+.min0{min-width:0}
+.lede{color:var(--muted);max-width:65ch}
+.hint{color:var(--muted);font-size:13px}
+button{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+
+/* Bar */
+.bar{position:sticky;top:env(safe-area-inset-top,0px);z-index:20;background:var(--surface);border-bottom:1px solid var(--line)}
+.bar-in{max-width:1080px;margin:0 auto;padding-inline:16px;padding-block:8px;display:flex;align-items:center;gap:8px 18px;flex-wrap:wrap}
+.brand{display:flex;align-items:center;gap:8px;font-family:var(--display);font-weight:700;font-size:23px;letter-spacing:.09em;text-transform:uppercase}
+.brand .mark{width:30px;height:30px;flex:none}
+.brand .word{height:19px;width:auto;color:var(--fg)}
+.tabs{display:flex;gap:2px;overflow-x:auto;min-width:0;flex:1 1 auto}
+.tab{font-family:var(--display);font-weight:600;font-size:16px;letter-spacing:.04em;text-transform:uppercase;padding:8px 11px;border:0;border-radius:var(--radius);background:transparent;color:var(--muted);cursor:pointer;white-space:nowrap}
+.tab:hover{color:var(--fg)}
+.tab[aria-current="page"]{color:var(--fg);background:var(--surface-2);box-shadow:inset 0 -2px 0 var(--accent)}
+.me{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--muted)}
+.me input{width:150px}
+@media (max-width:700px){
+  .tabs{order:3;flex-basis:100%}
+  .me{margin-left:auto}
+  .me input{width:128px;padding-block:6px}
+}
+
+.wrap{max-width:1080px;margin:0 auto;padding-inline:16px;padding-block:20px 72px;display:grid;gap:20px}
+.view{display:grid;gap:18px;min-width:0}
+.page-h{display:grid;gap:6px}
+.sec-h{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+
+/* Notice & banner */
+.notice,.banner{border:1px solid var(--line);border-radius:var(--radius);padding:12px 14px;display:flex;gap:12px;align-items:center;justify-content:space-between;flex-wrap:wrap}
+.notice{background:var(--warn-soft);border-color:transparent;color:var(--fg)}
+.banner{background:var(--accent-soft);border-color:transparent}
+.banner p{max-width:65ch}
+
+/* Tiles */
+.tiles{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}
+.tile{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:14px 16px;display:grid;gap:6px;align-content:start}
+.tile .n{font-family:var(--display);font-weight:700;font-size:42px;line-height:1;font-variant-numeric:tabular-nums}
+.tile .n small{font-size:20px;font-weight:600;color:var(--muted)}
+.tile .l{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;font-weight:600}
+.tile[data-tone="stop"] .n{color:var(--stop)}
+.tile[data-tone="warn"] .n{color:var(--warn)}
+.tile[data-tone="ok"] .n{color:var(--ok)}
+@media (max-width:760px){.tiles{grid-template-columns:repeat(2,minmax(0,1fr))}}
+
+/* Panels */
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);min-width:0}
+.panel-h{display:flex;align-items:center;justify-content:space-between;gap:8px 12px;padding:12px 16px;flex-wrap:wrap}
+.panel-h + *{border-top:1px solid var(--line)}
+.panel-b{padding:14px 16px}
+.stack-y{display:grid;gap:14px}
+details.panel > summary{list-style:none;cursor:pointer}
+details.panel > summary::-webkit-details-marker{display:none}
+details.panel:not([open]) > summary{border-bottom:0}
+details.panel > summary .chev{font-family:var(--display);font-weight:600;color:var(--accent);text-transform:uppercase;letter-spacing:.04em}
+details.panel[open] > summary .chev .closed{display:none}
+details.panel:not([open]) > summary .chev .opened{display:none}
+.empty{padding:16px;color:var(--muted)}
+
+/* Pills */
+.pill{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.05em;padding:3px 9px;border-radius:999px;background:var(--surface-2);color:var(--muted);white-space:nowrap}
+.pill::before{content:"";width:7px;height:7px;border-radius:50%;background:currentColor;flex:none}
+.pill[data-tone="stop"]{background:var(--stop-soft);color:var(--stop)}
+.pill[data-tone="warn"]{background:var(--warn-soft);color:var(--warn)}
+.pill[data-tone="ok"]{background:var(--ok-soft);color:var(--ok)}
+.pill[data-tone="info"]{background:var(--accent-soft);color:var(--accent)}
+.tone-warn{color:var(--warn)}
+.tone-stop{color:var(--stop)}
+
+/* Signal tower */
+.lamp{display:inline-grid;gap:2px;padding:3px;border-radius:4px;background:var(--surface-2);border:1px solid var(--line);flex:none}
+.lamp i{display:block;width:10px;height:7px;border-radius:2px;background:var(--lamp-off)}
+.lamp.big i{width:16px;height:11px}
+.lamp[data-tone="stop"] i:nth-child(1){background:var(--stop);box-shadow:0 0 6px var(--stop)}
+.lamp[data-tone="warn"] i:nth-child(2){background:var(--warn);box-shadow:0 0 6px var(--warn)}
+.lamp[data-tone="ok"] i:nth-child(3){background:var(--ok);box-shadow:0 0 6px var(--ok)}
+
+/* To-do list */
+.item{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:4px 12px;align-items:center;width:100%;text-align:left;padding:11px 16px;border:0;border-top:1px solid var(--line);background:transparent;cursor:pointer}
+.item:first-child{border-top:0}
+.item:hover{background:var(--surface-2)}
+.item .t{font-weight:600}
+.item .s{color:var(--muted);font-size:14px;overflow-wrap:anywhere}
+
+/* Machine cards */
+.mgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:12px}
+.mcard{display:grid;gap:10px;align-content:start;text-align:left;background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:14px;cursor:pointer;min-width:0}
+.mcard:hover{border-color:var(--accent)}
+.mcard-top{display:flex;gap:12px;align-items:flex-start}
+.nm{font-family:var(--display);font-weight:700;font-size:24px;line-height:1.05}
+.sub{color:var(--muted);font-size:13px}
+.kv{display:grid;grid-template-columns:auto minmax(0,1fr);gap:4px 12px;font-size:13px;padding-top:10px;border-top:1px solid var(--line)}
+.kv .k{color:var(--muted)}
+.kv .v{overflow-wrap:anywhere}
+
+/* Machine list rows */
+.row{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:4px 14px;align-items:center;width:100%;text-align:left;padding:12px 16px;border:0;border-top:1px solid var(--line);background:transparent;cursor:pointer}
+.row:first-child{border-top:0}
+.row:hover{background:var(--surface-2)}
+.row .nm{font-size:21px}
+
+/* Buttons */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;font-family:var(--display);font-weight:600;font-size:16px;letter-spacing:.04em;text-transform:uppercase;padding:9px 14px;border-radius:var(--radius);border:1px solid var(--line);background:var(--surface);color:var(--fg);cursor:pointer;white-space:nowrap}
+.btn:hover{border-color:var(--muted)}
+.btn:disabled{opacity:.55;cursor:progress}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-fg)}
+.btn.sm{font-size:14px;padding:5px 10px}
+.btn.ghost{background:transparent;border-color:transparent;color:var(--muted)}
+.btn.ghost:hover{color:var(--fg);border-color:var(--line)}
+.btn.armed{background:var(--stop);border-color:var(--stop);color:var(--on-stop)}
+.btn.alarm{background:var(--stop);border-color:var(--stop);color:var(--on-stop)}
+.btn.signal{font-size:21px;padding:14px 18px;width:100%;
+  background:repeating-linear-gradient(-45deg,var(--stop) 0 14px,var(--stop-2) 14px 28px);
+  border-color:var(--stop);color:var(--on-stop)}
+.btn.danger{background:transparent;border-color:var(--stop);color:var(--stop)}
+.actions{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end}
+.actions.start{justify-content:flex-start}
+.back{background:none;border:0;padding:0;color:var(--accent);font-family:var(--display);font-weight:600;font-size:16px;text-transform:uppercase;letter-spacing:.04em;cursor:pointer;justify-self:start}
+
+/* Forms */
+.form{display:grid;gap:14px}
+.form label{display:grid;gap:5px;font-size:13px;font-weight:600;color:var(--muted);min-width:0}
+input,select,textarea{font:inherit;font-size:15px;color:var(--fg);background:var(--bg);border:1px solid var(--line);border-radius:4px;padding:9px 10px;width:100%;min-width:0}
+textarea{resize:vertical}
+input[type="checkbox"],input[type="radio"]{width:auto;accent-color:var(--accent)}
+.form label.check{display:flex;align-items:flex-start;gap:9px;font-weight:500;color:var(--fg);font-size:14px}
+.form label.check input{margin-top:3px}
+.grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px}
+.grid4{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px}
+.inline-form{display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:10px;align-items:end}
+@media (max-width:620px){.inline-form{grid-template-columns:minmax(0,1fr)}}
+fieldset{border:0;margin:0;padding:0;min-width:0}
+legend{font-size:13px;font-weight:600;color:var(--muted);padding:0;margin-bottom:6px}
+.seg-opts{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:8px}
+.opt{display:flex!important;gap:10px;align-items:flex-start;border:1px solid var(--line);border-radius:var(--radius);padding:10px 12px;cursor:pointer;background:var(--surface)}
+.opt b{display:block;color:var(--fg);font-size:15px}
+.opt small{display:block;font-weight:500;color:var(--muted);font-size:13px}
+.opt input{margin-top:3px}
+.opt[data-tone="stop"]:has(input:checked){border-color:var(--stop);background:var(--stop-soft)}
+.opt[data-tone="warn"]:has(input:checked){border-color:var(--warn);background:var(--warn-soft)}
+.opt[data-tone="neutral"]:has(input:checked){border-color:var(--accent);background:var(--accent-soft)}
+.preview{max-height:180px;border-radius:4px;border:1px solid var(--line);justify-self:start}
+.calc{font-family:var(--mono);font-size:14px}
+.calc[data-tone="warn"]{color:var(--warn)}
+.alarm-form{border-color:var(--stop)}
+
+/* Machine sheet */
+.sheet{display:grid;gap:16px}
+.head{display:flex;gap:16px;align-items:flex-start;justify-content:space-between;flex-wrap:wrap}
+.head-l{display:flex;gap:14px;align-items:flex-start;min-width:0}
+.eyebrow{font-size:12px;text-transform:uppercase;letter-spacing:.08em;font-weight:600;color:var(--muted)}
+.panne{display:grid;gap:8px;padding:14px 16px;border-top:1px solid var(--line)}
+.panne:first-child{border-top:0}
+.panne-h{display:flex;gap:8px 12px;align-items:center;flex-wrap:wrap}
+.alarm-code{display:inline-block;justify-self:start;font-size:13px;padding:3px 8px;border-radius:4px;background:var(--surface-2);border:1px solid var(--line)}
+.thumb{border:1px solid var(--line);border-radius:4px;padding:0;background:var(--surface-2);cursor:zoom-in;justify-self:start;width:120px;height:90px;overflow:hidden}
+.thumb img{width:100%;height:100%;object-fit:cover;display:block}
+.task{display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:6px 12px;align-items:center;padding:11px 16px;border-top:1px solid var(--line)}
+.task:first-child{border-top:0}
+.task .meta{color:var(--muted);font-size:13px}
+.t-act{display:flex;gap:4px}
+@media (max-width:620px){.task{grid-template-columns:minmax(0,1fr) auto}.task .pill{grid-column:1;justify-self:start;grid-row:2}.t-act{grid-row:1 / span 2;grid-column:2}}
+.sub-form{padding:12px 16px;border-top:1px solid var(--line);background:var(--surface-2);border-radius:0 0 var(--radius) var(--radius)}
+.sub-form summary{cursor:pointer;color:var(--accent);font-family:var(--display);font-weight:600;text-transform:uppercase;letter-spacing:.04em}
+.sub-form[open] summary{margin-bottom:12px}
+
+.readouts{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px}
+.read{display:grid;gap:2px}
+.r-l{font-size:12px;text-transform:uppercase;letter-spacing:.06em;font-weight:600;color:var(--muted)}
+.r-v{font-family:var(--mono);font-size:28px;font-weight:500;font-variant-numeric:tabular-nums;line-height:1.15}
+.r-v small{font-size:15px;color:var(--muted)}
+.r-v.sm{font-size:20px}
+.read[data-tone="warn"] .r-v{color:var(--warn)}
+.r-s{font-size:13px;color:var(--muted)}
+.alert-line{padding:8px 12px;border-radius:4px;background:var(--warn-soft);color:var(--warn);font-weight:600;font-size:14px}
+.cchart{width:100%;max-width:560px;height:auto;display:block}
+.c-band{fill:var(--ok-soft)}
+.c-grid{stroke:var(--line);stroke-dasharray:3 3}
+.c-lbl{fill:var(--muted);font-family:var(--mono);font-size:10px}
+.c-line{fill:none;stroke:var(--accent);stroke-width:2;stroke-linejoin:round;stroke-linecap:round}
+.c-dot{fill:var(--accent)}
+.c-dot.out{fill:var(--stop)}
+.c-dot.last{stroke:var(--surface);stroke-width:2}
+.cool-split{display:grid;gap:14px}
+.form-sep{border-top:1px solid var(--line)}
+
+.hist{list-style:none;margin:0;padding:0}
+.hist li{display:grid;grid-template-columns:110px minmax(0,1fr);gap:12px;padding:9px 16px;border-top:1px solid var(--line);font-size:14px}
+.hist li:first-child{border-top:0}
+.hist time{font-family:var(--mono);font-size:12px;color:var(--muted);padding-top:2px}
+.hist .by{color:var(--muted)}
+@media (max-width:520px){.hist li{grid-template-columns:minmax(0,1fr);gap:2px}}
+
+.qrrow{display:flex;gap:16px;align-items:center;flex-wrap:wrap}
+.qrbox{background:var(--paper);padding:6px;border-radius:4px;border:1px solid var(--line);line-height:0}
+.qrbox canvas{display:block;max-width:100%}
+.url{font-family:var(--mono);font-size:12px;overflow-wrap:anywhere;user-select:all;color:var(--muted)}
+
+/* Labels (physical stickers: always paper and ink) */
+.labels{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:12px}
+.label{background:var(--paper);color:var(--ink);border:1px dashed var(--lamp-off);border-radius:4px;padding:14px;display:grid;grid-template-columns:auto minmax(0,1fr);gap:12px;align-items:center}
+.label .l-brand{display:flex;align-items:center;gap:6px;font-family:var(--display);font-weight:600;font-size:11px;letter-spacing:.12em;text-transform:uppercase}
+.label .l-brand span{opacity:.6}
+.label .l-mark{width:18px;height:18px;flex:none}
+.label .l-nm{font-family:var(--display);font-weight:700;font-size:26px;line-height:1}
+.label .l-sub{font-size:12px;opacity:.75}
+.label .l-cta{font-size:12px;font-weight:600;color:#b3302a;margin-top:6px}
+.label canvas{display:block;width:108px;height:108px}
+
+body:not([data-stage="app"]) .tabs,body:not([data-stage="app"]) .me{display:none}
+.auth-card{max-width:440px;width:100%;margin:24px auto 0}
+.invite{font-size:26px;letter-spacing:.14em;padding:6px 14px;border:1px dashed var(--line);border-radius:4px;background:var(--surface-2)}
+.toast{position:fixed;left:50%;bottom:calc(18px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--fg);color:var(--bg);padding:10px 16px;border-radius:var(--radius);max-width:calc(100% - 32px);font-weight:500;z-index:50;box-shadow:0 6px 24px rgba(0,0,0,.25)}
+.lightbox{position:fixed;inset:0;background:rgba(10,14,17,.86);display:grid;place-items:center;gap:12px;padding:24px 16px;z-index:60;align-content:center}
+.lightbox img{max-width:100%;max-height:78vh;border-radius:4px}
+@media (prefers-reduced-motion:no-preference){.toast{animation:rise .18s ease-out}@keyframes rise{from{transform:translate(-50%,8px);opacity:0}}}
+</style>
+</head>
+<body data-stage="loading">
+
+<header class="bar">
+  <div class="bar-in">
+    <div class="brand" role="img" aria-label="COPO">
+      <svg class="mark" viewBox="0 0 100 100" aria-hidden="true"><defs><radialGradient id="brand-g" gradientUnits="userSpaceOnUse" cx="44.22" cy="58.18" r="45.35"><stop offset="0.0" stop-color="#f6d98a"/><stop offset="0.16" stop-color="#e8ac45"/><stop offset="0.36" stop-color="#c06a2b"/><stop offset="0.52" stop-color="#8a4a86"/><stop offset="0.68" stop-color="#4a68b4"/><stop offset="0.86" stop-color="#2a63a8"/><stop offset="1.0" stop-color="#1d4f86"/></radialGradient></defs><path d="M40.79 59.59 L40.81 59.75 L40.81 59.91 L40.80 60.07 L40.81 60.23 L40.81 60.39 L40.82 60.55 L40.84 60.72 L40.86 60.89 L40.89 61.06 L40.93 61.23 L40.98 61.40 L41.03 61.58 L41.09 61.75 L41.16 61.93 L41.23 62.10 L41.32 62.28 L41.41 62.45 L41.52 62.63 L41.63 62.80 L41.75 62.97 L41.88 63.14 L42.02 63.31 L42.17 63.47 L42.33 63.63 L42.50 63.79 L42.68 63.94 L42.86 64.08 L43.06 64.22 L43.26 64.36 L43.47 64.49 L43.69 64.61 L43.92 64.72 L44.16 64.83 L44.40 64.92 L44.66 65.01 L44.92 65.09 L45.18 65.16 L45.46 65.22 L45.74 65.26 L46.02 65.30 L46.31 65.33 L46.61 65.34 L46.90 65.34 L47.21 65.33 L47.51 65.31 L47.82 65.27 L48.13 65.22 L48.45 65.16 L48.76 65.08 L49.08 64.99 L49.39 64.89 L49.70 64.77 L50.02 64.64 L50.33 64.49 L50.64 64.33 L50.94 64.15 L51.24 63.96 L51.54 63.75 L51.83 63.53 L52.11 63.30 L52.39 63.05 L52.66 62.79 L52.92 62.51 L53.17 62.22 L53.42 61.92 L53.65 61.61 L53.88 61.28 L54.09 60.94 L54.29 60.58 L54.48 60.22 L54.65 59.85 L54.81 59.46 L54.96 59.06 L55.09 58.66 L55.21 58.24 L55.31 57.82 L55.40 57.39 L55.46 56.95 L55.51 56.51 L55.55 56.06 L55.56 55.60 L55.56 55.14 L55.54 54.68 L55.49 54.21 L55.43 53.75 L55.35 53.28 L55.25 52.81 L55.13 52.34 L55.00 51.87 L54.84 51.40 L54.66 50.94 L54.46 50.47 L54.24 50.02 L54.00 49.57 L53.74 49.12 L53.46 48.69 L53.16 48.26 L52.84 47.84 L52.50 47.43 L52.14 47.03 L51.76 46.64 L51.37 46.27 L50.96 45.91 L50.53 45.56 L50.08 45.23 L49.62 44.91 L49.14 44.61 L48.64 44.33 L48.13 44.06 L47.61 43.81 L47.08 43.59 L46.53 43.38 L45.96 43.19 L45.39 43.03 L44.81 42.89 L44.22 42.77 L43.62 42.67 L43.01 42.59 L42.40 42.54 L41.77 42.52 L41.15 42.52 L40.52 42.54 L39.89 42.59 L39.25 42.67 L38.62 42.77 L37.99 42.89 L37.35 43.05 L36.72 43.23 L36.10 43.43 L35.47 43.67 L34.86 43.92 L34.25 44.21 L33.65 44.52 L33.05 44.85 L32.47 45.22 L31.90 45.60 L31.34 46.02 L30.80 46.45 L30.27 46.91 L29.75 47.40 L29.25 47.90 L28.77 48.43 L28.31 48.99 L27.87 49.56 L27.44 50.15 L27.04 50.77 L26.67 51.40 L26.31 52.05 L25.98 52.72 L25.68 53.41 L25.40 54.11 L25.14 54.82 L24.92 55.55 L24.72 56.29 L24.55 57.05 L24.41 57.81 L24.30 58.58 L24.22 59.37 L24.17 60.15 L24.15 60.95 L24.17 61.74 L24.21 62.55 L24.29 63.35 L24.40 64.15 L24.54 64.96 L24.72 65.76 L24.92 66.55 L25.16 67.35 L25.44 68.13 L25.74 68.91 L26.08 69.68 L26.45 70.45 L26.85 71.19 L27.29 71.93 L27.75 72.65 L28.25 73.36 L28.77 74.05 L29.33 74.72 L29.91 75.38 L30.52 76.01 L31.16 76.62 L31.83 77.21 L32.52 77.77 L33.24 78.31 L33.99 78.83 L34.75 79.31 L35.54 79.77 L36.35 80.19 L37.18 80.59 L38.03 80.96 L38.90 81.29 L39.78 81.59 L40.68 81.86 L41.59 82.09 L42.52 82.28 L43.46 82.44 L44.40 82.57 L45.36 82.65 L46.32 82.70 L47.29 82.71 L48.26 82.69 L49.24 82.62 L50.21 82.51 L51.19 82.37 L52.16 82.19 L53.13 81.96 L54.10 81.70 L55.05 81.40 L56.00 81.06 L56.94 80.68 L57.87 80.26 L58.78 79.81 L59.68 79.32 L60.56 78.78 L61.43 78.22 L62.27 77.61 L63.10 76.97 L63.90 76.30 L64.68 75.59 L65.43 74.85 L66.15 74.08 L66.85 73.27 L67.52 72.44 L68.16 71.57 L68.76 70.68 L69.33 69.76 L69.87 68.81 L70.37 67.84 L70.83 66.85 L71.26 65.84 L71.65 64.80 L72.00 63.75 L72.30 62.68 L72.57 61.59 L72.80 60.49 L72.98 59.38 L73.11 58.26 L73.21 57.13 L73.26 55.99 L73.26 54.84 L73.22 53.70 L73.14 52.55 L73.00 51.40 L72.83 50.25 L72.60 49.10 L72.33 47.96 L72.02 46.83 L71.66 45.71 L71.25 44.60 L70.80 43.50 L70.30 42.41 L69.76 41.34 L69.18 40.29 L68.55 39.26 L67.88 38.25 L67.17 37.27 L66.41 36.31 L65.62 35.38 L64.79 34.48 L63.92 33.60 L62.35 31.96 L60.79 30.31 L59.23 28.67 L57.67 27.02 L56.10 25.38 L54.54 23.74 L52.98 22.09 L51.42 20.45 L49.85 18.80 L48.29 17.16 L46.73 15.51 L40.73 9.48 L53.93 5.00 L55.59 6.54 L57.26 8.09 L58.92 9.63 L60.58 11.17 L62.24 12.72 L63.91 14.26 L65.57 15.81 L67.23 17.35 L68.89 18.89 L70.55 20.44 L72.22 21.98 L73.88 23.52 L75.12 24.82 L76.30 26.16 L77.42 27.54 L78.49 28.95 L79.50 30.41 L80.44 31.90 L81.32 33.42 L82.14 34.97 L82.90 36.54 L83.59 38.14 L84.21 39.76 L84.77 41.39 L85.26 43.05 L85.69 44.71 L86.04 46.39 L86.33 48.07 L86.56 49.75 L86.71 51.44 L86.80 53.13 L86.82 54.82 L86.77 56.49 L86.66 58.16 L86.49 59.82 L86.25 61.47 L85.94 63.09 L85.57 64.70 L85.14 66.29 L84.65 67.86 L84.11 69.40 L83.50 70.91 L82.83 72.39 L82.11 73.83 L81.34 75.25 L80.51 76.62 L79.63 77.96 L78.71 79.26 L77.73 80.52 L76.71 81.73 L75.65 82.90 L74.55 84.01 L73.41 85.09 L72.23 86.11 L71.01 87.08 L69.76 88.00 L68.48 88.86 L67.18 89.67 L65.84 90.43 L64.48 91.13 L63.11 91.77 L61.71 92.36 L60.29 92.89 L58.86 93.35 L57.42 93.77 L55.97 94.12 L54.51 94.41 L53.05 94.65 L51.58 94.82 L50.11 94.94 L48.65 95.00 L47.19 95.00 L45.74 94.94 L44.29 94.83 L42.86 94.66 L41.44 94.43 L40.04 94.15 L38.65 93.82 L37.29 93.43 L35.94 92.99 L34.62 92.49 L33.33 91.95 L32.06 91.36 L30.82 90.73 L29.61 90.04 L28.44 89.32 L27.30 88.54 L26.20 87.73 L25.13 86.88 L24.11 85.99 L23.12 85.07 L22.17 84.11 L21.27 83.11 L20.41 82.09 L19.60 81.04 L18.83 79.96 L18.11 78.85 L17.44 77.73 L16.81 76.58 L16.23 75.41 L15.70 74.23 L15.23 73.03 L14.80 71.82 L14.42 70.60 L14.09 69.37 L13.81 68.13 L13.59 66.89 L13.41 65.64 L13.28 64.40 L13.21 63.15 L13.18 61.91 L13.20 60.68 L13.27 59.45 L13.39 58.24 L13.56 57.03 L13.78 55.84 L14.04 54.66 L14.34 53.50 L14.69 52.36 L15.09 51.23 L15.52 50.13 L16.00 49.06 L16.52 48.01 L17.07 46.98 L17.67 45.98 L18.30 45.01 L18.96 44.08 L19.66 43.17 L20.39 42.30 L21.16 41.46 L21.95 40.66 L22.76 39.89 L23.61 39.16 L24.48 38.47 L25.37 37.81 L26.28 37.20 L27.21 36.62 L28.15 36.09 L29.12 35.60 L30.09 35.15 L31.08 34.74 L32.08 34.37 L33.09 34.04 L34.11 33.76 L35.12 33.52 L36.15 33.32 L37.17 33.16 L38.20 33.05 L39.22 32.97 L40.24 32.94 L41.25 32.95 L42.26 33.00 L43.26 33.09 L44.25 33.22 L45.23 33.39 L46.19 33.59 L47.14 33.83 L48.07 34.11 L48.99 34.43 L49.89 34.78 L50.76 35.16 L51.62 35.58 L52.45 36.03 L53.26 36.50 L54.05 37.01 L54.81 37.55 L55.54 38.11 L56.24 38.70 L56.92 39.31 L57.57 39.95 L58.18 40.60 L58.77 41.28 L59.32 41.98 L59.85 42.69 L60.34 43.42 L60.79 44.16 L61.22 44.92 L61.61 45.69 L61.96 46.46 L62.28 47.25 L62.57 48.05 L62.82 48.85 L63.04 49.65 L63.23 50.46 L63.38 51.26 L63.49 52.07 L63.57 52.88 L63.62 53.68 L63.64 54.48 L63.62 55.27 L63.57 56.06 L63.49 56.84 L63.38 57.61 L63.24 58.36 L63.07 59.11 L62.86 59.84 L62.63 60.56 L62.38 61.26 L62.09 61.95 L61.78 62.62 L61.45 63.27 L61.09 63.90 L60.71 64.51 L60.31 65.10 L59.88 65.67 L59.44 66.22 L58.98 66.74 L58.50 67.24 L58.00 67.71 L57.49 68.16 L56.97 68.59 L56.43 68.98 L55.88 69.36 L55.32 69.70 L54.75 70.02 L54.17 70.32 L53.59 70.58 L53.00 70.82 L52.40 71.03 L51.81 71.22 L51.21 71.37 L50.61 71.50 L50.01 71.61 L49.41 71.69 L48.82 71.74 L48.23 71.76 L47.64 71.77 L47.06 71.74 L46.49 71.69 L45.93 71.62 L45.37 71.52 L44.83 71.40 L44.29 71.26 L43.77 71.10 L43.26 70.92 L42.77 70.71 L42.29 70.49 L41.82 70.25 L41.37 69.99 L40.94 69.72 L40.52 69.43 L40.13 69.12 L39.75 68.80 L39.38 68.47 L39.04 68.12 L38.72 67.76 L38.42 67.40 L38.14 67.02 L37.88 66.64 L37.64 66.25 L37.42 65.85 L37.22 65.45 L37.04 65.05 L36.89 64.64 L36.75 64.23 L36.64 63.82 L36.55 63.41 L36.47 63.00 L36.42 62.60 L36.39 62.19 L36.38 61.80 L36.39 61.40 L36.42 61.02 L36.47 60.64 L36.54 60.27 L36.62 59.91 L36.72 59.55 L36.85 59.22 L36.98 58.89 L37.14 58.58 L37.32 58.28 L37.53 58.01 Z" fill="url(#brand-g)"/><path d="M47.65 35.53 L46.77 35.26 L45.88 35.03 L44.97 34.84 L44.05 34.68 L43.13 34.56 L42.19 34.47 L41.24 34.42 L40.28 34.41 L39.32 34.44 L38.36 34.51 L37.39 34.62 L36.43 34.76 L35.46 34.95 L34.50 35.18 L33.54 35.45 L32.59 35.75 L31.64 36.10 L30.71 36.48 L29.78 36.91 L28.87 37.38 L27.98 37.88 L27.10 38.42 L26.23 39.00 L25.39 39.62 L24.57 40.28 L23.77 40.97 L22.99 41.69 L22.24 42.46 L21.52 43.25 L20.83 44.08 L20.16 44.94 L19.53 45.82 L18.93 46.74 L18.37 47.69 L17.84 48.66 L17.34 49.66 L16.89 50.68 L16.48 51.73 L16.10 52.80 L15.77 53.88 L15.47 54.99 L15.23 56.11 L15.02 57.24 L14.86 58.39 L14.75 59.55 L14.68 60.72 L14.65 61.89 L14.68 63.07 L14.75 64.26 L14.87 65.44 L15.04 66.63 L15.25 67.81 L15.52 69.00 L15.83 70.17 L16.19 71.34 L16.60 72.49 L17.05 73.64 L17.56 74.77 L18.11 75.88 L18.71 76.98 L19.35 78.06 L20.04 79.11 L20.77 80.15 L21.55 81.15 L22.37 82.13 L23.23 83.08 L24.14 84.00 L25.08 84.89 L26.06 85.74 L27.08 86.55 L28.14 87.33 L29.23 88.07 L30.35 88.77 L31.51 89.42 L32.69 90.03 L33.91 90.60 L35.15 91.12 L36.41 91.59 L37.70 92.01 L39.01 92.39 L40.34 92.71 L41.69 92.98 L43.05 93.20 L44.42 93.36 L45.81 93.47 L47.20 93.53 L48.60 93.53 L50.01 93.47 L51.42 93.36 L52.83 93.19 L54.23 92.97 L55.63 92.68 L57.03 92.35 L58.41 91.95 L59.79 91.50 L61.15 90.99 L62.49 90.43 L63.82 89.81 L65.13 89.14 L66.41 88.41 L67.67 87.63 L68.90 86.80 L70.10 85.92 L71.27 84.98 L72.41 84.00 L73.51 82.97 L74.57 81.89 L75.60 80.77 L76.58 79.60 L77.52 78.39 L78.41 77.14 L79.25 75.85 L80.05 74.53 L80.80 73.16 L81.49 71.77 L82.14 70.34 L82.72 68.89 L83.25 67.40 L83.73 65.89 L84.14 64.36 L84.50 62.81 L84.79 61.24 L85.02 59.65 L85.19 58.05 L85.30 56.44 L85.35 54.82 L85.33 53.19 L85.24 51.56 L85.09 49.93 L84.88 48.30 L84.60 46.68 L84.25 45.06 L83.84 43.45 L83.37 41.85 L82.83 40.27 L82.23 38.71 L81.56 37.16 L80.83 35.64 L80.04 34.14 L79.19 32.67 L78.27 31.23 L77.30 29.83 L76.27 28.45 L75.18 27.12 L74.04 25.83 L72.84 24.57 L71.18 23.03 L69.52 21.48 L67.86 19.94 L66.19 18.40 L64.53 16.85 L62.87 15.31 L61.21 13.77 L59.55 12.22 L57.88 10.68 L56.22 9.14 L54.56 7.59 L52.90 6.05 L51.76 7.20 L53.41 8.76 L55.06 10.31 L56.70 11.87 L58.35 13.43 L60.00 14.98 L61.65 16.54 L63.30 18.10 L64.95 19.66 L66.60 21.21 L68.25 22.77 L69.90 24.33 L71.55 25.88 L72.70 27.08 L73.80 28.32 L74.84 29.60 L75.83 30.91 L76.76 32.25 L77.64 33.63 L78.46 35.04 L79.22 36.47 L79.92 37.93 L80.57 39.40 L81.15 40.90 L81.66 42.42 L82.12 43.94 L82.52 45.48 L82.85 47.03 L83.12 48.59 L83.33 50.15 L83.48 51.71 L83.56 53.27 L83.58 54.82 L83.54 56.37 L83.44 57.92 L83.28 59.45 L83.07 60.97 L82.79 62.47 L82.45 63.96 L82.06 65.42 L81.61 66.87 L81.10 68.29 L80.54 69.68 L79.93 71.05 L79.27 72.39 L78.56 73.69 L77.80 74.96 L77.00 76.20 L76.14 77.39 L75.25 78.55 L74.31 79.67 L73.34 80.75 L72.32 81.78 L71.27 82.77 L70.19 83.71 L69.07 84.60 L67.93 85.45 L66.75 86.25 L65.55 87.00 L64.33 87.69 L63.08 88.34 L61.81 88.93 L60.53 89.47 L59.23 89.96 L57.92 90.40 L56.60 90.78 L55.27 91.10 L53.93 91.38 L52.59 91.59 L51.24 91.76 L49.90 91.87 L48.55 91.93 L47.22 91.93 L45.88 91.88 L44.56 91.78 L43.25 91.62 L41.95 91.42 L40.66 91.17 L39.39 90.86 L38.14 90.51 L36.91 90.11 L35.70 89.66 L34.52 89.17 L33.36 88.63 L32.23 88.05 L31.12 87.43 L30.05 86.77 L29.01 86.07 L28.00 85.33 L27.02 84.55 L26.08 83.74 L25.18 82.90 L24.32 82.03 L23.49 81.12 L22.71 80.19 L21.96 79.24 L21.26 78.26 L20.60 77.25 L19.99 76.23 L19.39 75.19 L18.84 74.14 L18.34 73.08 L17.87 71.99 L17.46 70.90 L17.09 69.79 L16.76 68.67 L16.48 67.55 L16.25 66.42 L16.06 65.28 L15.92 64.15 L15.82 63.01 L15.77 61.87 L15.77 60.74 L15.81 59.62 L15.89 58.50 L16.02 57.39 L16.19 56.29 L16.41 55.20 L16.67 54.12 L16.96 53.07 L17.30 52.03 L17.68 51.00 L18.10 50.00 L18.55 49.02 L19.05 48.06 L19.57 47.13 L20.14 46.22 L20.73 45.34 L21.36 44.49 L22.02 43.67 L22.70 42.88 L23.42 42.12 L24.16 41.39 L24.93 40.70 L25.72 40.04 L26.53 39.41 L27.36 38.82 L28.22 38.27 L29.09 37.76 L29.97 37.28 L30.87 36.84 L31.78 36.44 L32.70 36.07 L33.64 35.75 L34.58 35.47 L35.52 35.22 L36.47 35.01 L37.43 34.85 L38.38 34.72 L39.34 34.63 L40.29 34.58 L41.24 34.57 L42.18 34.59 L43.12 34.66 L44.04 34.76 L44.96 34.90 L45.87 35.07 L46.77 35.28 L47.65 35.53 Z" fill="#ffffff" fill-opacity="0.42"/></svg>
+      <svg class="word" viewBox="-2 -2 288 104" aria-hidden="true"><g fill="none" stroke="currentColor" stroke-width="19" stroke-linejoin="miter"><path d="M45.39 15.02 A21.50 21.50 0 0 0 9.50 31.00 L9.50 69.00 A21.50 21.50 0 0 0 45.39 84.98"/><path d="M83.50 31.00 A21.50 21.50 0 0 1 126.50 31.00 L126.50 69.00 A21.50 21.50 0 0 1 83.50 69.00 Z"/><path d="M157.50 100 L157.50 9.50 L180.00 9.50 A20.50 20.50 0 0 1 180.00 50.50 L157.50 50.50"/><path d="M231.50 31.00 A21.50 21.50 0 0 1 274.50 31.00 L274.50 69.00 A21.50 21.50 0 0 1 231.50 69.00 Z"/></g></svg>
+    </div>
+    <nav class="tabs" aria-label="Sections">
+      <button class="tab" data-go="tableau" type="button">Tableau de bord</button>
+      <button class="tab" data-go="machines" type="button">Machines</button>
+      <button class="tab" data-go="etiquettes" type="button">Étiquettes QR</button>
+      <button class="tab" data-go="atelier" type="button">Atelier</button>
+    </nav>
+    <label class="me" for="me-name"><span>Vous</span><input id="me-name" placeholder="Votre nom" maxlength="40" autocomplete="name"></label>
+  </div>
+</header>
+
+<main class="wrap">
+  <div id="notice" class="notice" hidden></div>
+  <div id="example-banner" class="banner" hidden>
+    <p><b>Données d'exemple.</b> Ces machines et ces relevés sont fictifs, pour essayer l'appli. Effacez-les quand vous ajoutez vos vraies machines.</p>
+    <button class="btn sm" type="button" data-act="clear-examples">Effacer les exemples</button>
+  </div>
+
+  <!-- Connexion -->
+  <section id="v-auth" class="view" aria-labelledby="h-auth" hidden>
+    <div class="auth-card panel">
+      <form id="f-login" class="panel-b form">
+        <div class="page-h"><h1 id="h-auth">Connexion</h1><p class="lede">Connectez-vous pour accéder au parc machines de votre atelier.</p></div>
+        <label for="l-email">Adresse e-mail<input id="l-email" type="email" autocomplete="email" required></label>
+        <label for="l-pass">Mot de passe (6 caractères minimum)<input id="l-pass" type="password" autocomplete="current-password" minlength="6" required></label>
+        <div class="actions start"><button class="btn primary" type="submit" id="l-submit">Se connecter</button><button class="btn" type="button" data-act="signup">Créer un compte</button></div>
+        <p class="hint" id="l-msg" role="status"></p>
+      </form>
+    </div>
+  </section>
+
+  <!-- Choix de l'atelier -->
+  <section id="v-onboard" class="view" aria-labelledby="h-onboard" hidden>
+    <div class="page-h"><h1 id="h-onboard">Votre atelier</h1><p class="lede">Créez l'espace de votre atelier, ou rejoignez celui de vos collègues avec leur code d'invitation.</p></div>
+    <div class="grid2">
+      <form id="f-create" class="panel panel-b form">
+        <h2>Créer un atelier</h2>
+        <label for="o-nom">Nom de l'atelier<input id="o-nom" required maxlength="80" placeholder="ex. Atelier fraisage"></label>
+        <div class="actions start"><button class="btn primary" type="submit">Créer l'atelier</button></div>
+      </form>
+      <form id="f-join" class="panel panel-b form">
+        <h2>Rejoindre un atelier</h2>
+        <label for="o-code">Code d'invitation<input id="o-code" required maxlength="12" class="mono" placeholder="ex. 7F3A9C1B" autocapitalize="characters" autocomplete="off"></label>
+        <div class="actions start"><button class="btn" type="submit">Rejoindre</button></div>
+      </form>
+    </div>
+    <p class="hint">Connecté en tant que <span id="o-email"></span>. <button class="btn sm ghost" type="button" data-act="logout">Se déconnecter</button></p>
+  </section>
+
+  <!-- Atelier -->
+  <section id="v-atelier" class="view" aria-labelledby="at-nom" hidden>
+    <div class="page-h"><p class="eyebrow">Atelier</p><h1 id="at-nom">Atelier</h1></div>
+    <div class="panel">
+      <div class="panel-h"><h2>Inviter des collègues</h2></div>
+      <div class="panel-b stack-y">
+        <p>Chaque collègue crée son compte COPO, puis entre ce code pour rejoindre l'atelier :</p>
+        <div class="qrrow"><span class="invite mono" id="at-code"></span><button class="btn sm" type="button" data-act="copy-code">Copier le code</button></div>
+      </div>
+    </div>
+    <div class="panel">
+      <div class="panel-h"><h2>Votre compte</h2></div>
+      <div class="panel-b stack-y">
+        <p>Connecté en tant que <b id="at-email"></b></p>
+        <div class="actions start"><button class="btn" type="button" data-act="logout">Se déconnecter</button></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Tableau de bord -->
+  <section id="v-tableau" class="view" aria-labelledby="h-dash">
+    <div class="page-h">
+      <h1 id="h-dash">Tableau de bord</h1>
+      <p class="lede" id="dash-date"></p>
+    </div>
+    <div class="tiles" id="dash-tiles"></div>
+    <div class="panel">
+      <div class="panel-h"><h2>À traiter</h2><span class="hint" id="todo-count"></span></div>
+      <div id="dash-todo"><p class="empty">Chargement du parc machines…</p></div>
+    </div>
+    <div class="sec-h"><h2>Parc machines</h2><button class="btn sm" type="button" data-go="machines">Gérer les machines</button></div>
+    <div class="mgrid" id="dash-grid"></div>
+  </section>
+
+  <!-- Machines -->
+  <section id="v-machines" class="view" aria-labelledby="h-machines" hidden>
+    <div class="page-h">
+      <h1 id="h-machines">Machines</h1>
+      <p class="lede">Chaque machine a sa fiche, son plan d'entretien et son étiquette QR.</p>
+    </div>
+    <details class="panel" id="add-panel">
+      <summary class="panel-h"><h2>Ajouter une machine</h2><span class="chev"><span class="closed">+ Ajouter</span><span class="opened">Fermer</span></span></summary>
+      <form id="f-add" class="panel-b form">
+        <div class="grid2">
+          <label for="a-nom">Nom de la machine<input id="a-nom" required maxlength="40" placeholder="ex. DMC 3"></label>
+          <label for="a-type">Type
+            <select id="a-type">
+              <option value="vmc">Centre d'usinage vertical</option>
+              <option value="hmc">Centre d'usinage horizontal</option>
+              <option value="tour">Tour CN</option>
+              <option value="autre">Autre machine</option>
+            </select>
+          </label>
+          <label for="a-marque">Marque<input id="a-marque" maxlength="40" placeholder="ex. Haas"></label>
+          <label for="a-modele">Modèle<input id="a-modele" maxlength="40" placeholder="ex. VF-2"></label>
+          <label for="a-empl">Emplacement<input id="a-empl" maxlength="40" placeholder="ex. Îlot fraisage"></label>
+        </div>
+        <label class="check" for="a-plan"><input type="checkbox" id="a-plan" checked> <span>Charger le plan d'entretien type (<span id="a-plan-n">9</span> tâches, à ajuster d'après le manuel du constructeur)</span></label>
+        <label class="check" for="a-liq"><input type="checkbox" id="a-liq" checked> <span>Suivre le liquide de coupe de cette machine</span></label>
+        <div class="actions"><button class="btn primary" type="submit" id="a-submit">Créer la machine</button></div>
+      </form>
+    </details>
+    <div class="panel"><div id="m-list"><p class="empty">Chargement…</p></div></div>
+  </section>
+
+  <!-- Fiche machine -->
+  <section id="v-machine" class="view sheet" aria-label="Fiche machine" hidden>
+    <button class="back" type="button" data-go="back">← Retour</button>
+    <div id="ms-head" class="head"></div>
+    <div id="ms-body" class="sheet">
+      <button class="btn signal" type="button" id="ms-signal" data-act="signal">Signaler une panne</button>
+
+      <form id="f-panne" class="panel form alarm-form" hidden>
+        <div class="panel-h"><h2>Signaler une panne</h2><button type="button" class="btn sm ghost" data-act="signal-cancel">Annuler</button></div>
+        <div class="panel-b form">
+          <fieldset>
+            <legend>Gravité</legend>
+            <div class="seg-opts">
+              <label class="opt" data-tone="stop"><input type="radio" name="grav" value="arret" checked><span><b>Machine à l'arrêt</b><small>Impossible de produire</small></span></label>
+              <label class="opt" data-tone="warn"><input type="radio" name="grav" value="degrade"><span><b>Mode dégradé</b><small>Elle tourne, mais pas normalement</small></span></label>
+              <label class="opt" data-tone="neutral"><input type="radio" name="grav" value="mineur"><span><b>Défaut mineur</b><small>À traiter quand possible</small></span></label>
+            </div>
+          </fieldset>
+          <label for="p-alarme">Code ou message d'alarme CN (facultatif)<input id="p-alarme" class="mono" maxlength="80" placeholder="tel qu'affiché à l'écran"></label>
+          <label for="p-desc">Ce qui se passe<textarea id="p-desc" required maxlength="600" rows="3" placeholder="ex. bruit anormal de la broche au-dessus de 8 000 tr/min"></textarea></label>
+          <label for="p-photo">Photo de l'écran d'alarme, de la pièce ou de la fuite (facultatif)<input type="file" id="p-photo" accept="image/*" capture="environment"></label>
+          <img id="p-preview" class="preview" alt="Aperçu de la photo jointe" hidden>
+          <div class="actions"><button class="btn alarm" type="submit" id="p-submit">Envoyer le signalement</button></div>
+        </div>
+      </form>
+
+      <div class="panel" id="ms-pannes-panel">
+        <div class="panel-h"><h2>Pannes en cours</h2><span class="hint" id="ms-down"></span></div>
+        <div id="ms-pannes"></div>
+        <form id="f-resolve" class="panel-b form sub-form" hidden>
+          <p id="r-for" class="hint"></p>
+          <label for="r-text">Ce qui a été fait<textarea id="r-text" required rows="2" maxlength="600" placeholder="ex. courroie de broche remplacée, essai à vide OK"></textarea></label>
+          <div class="actions"><button type="button" class="btn ghost" data-act="resolve-cancel">Annuler</button><button class="btn primary" type="submit" id="r-submit">Clôturer la panne</button></div>
+        </form>
+      </div>
+
+      <div class="panel">
+        <div class="panel-h"><h2>Entretien préventif</h2><span class="hint">Plan type à ajuster d'après le manuel du constructeur</span></div>
+        <div id="ms-tasks"></div>
+        <details class="sub-form" id="task-add">
+          <summary>+ Ajouter une tâche</summary>
+          <form id="f-task" class="form inline-form">
+            <label for="t-label">Tâche<input id="t-label" required maxlength="90" placeholder="ex. Contrôler l'usure des courroies"></label>
+            <label for="t-freq">Fréquence
+              <select id="t-freq">
+                <option value="1">Chaque jour</option>
+                <option value="7" selected>Chaque semaine</option>
+                <option value="14">Toutes les 2 semaines</option>
+                <option value="30">Chaque mois</option>
+                <option value="90">Chaque trimestre</option>
+                <option value="180">Tous les 6 mois</option>
+                <option value="365">Chaque année</option>
+              </select>
+            </label>
+            <button class="btn primary" type="submit">Ajouter</button>
+          </form>
+        </details>
+      </div>
+
+      <div class="panel" id="ms-cool-panel">
+        <div class="panel-h"><h2>Liquide de coupe</h2><span class="hint" id="ms-cool-target"></span></div>
+        <div class="panel-b cool-split" id="ms-cool"></div>
+        <form id="f-cool" class="panel-b form form-sep">
+          <h3 class="mini">Nouveau relevé</h3>
+          <div class="grid4">
+            <label for="c-brix">Lecture réfractomètre (°Brix)<input id="c-brix" type="number" step="0.1" min="0" max="30" inputmode="decimal" required></label>
+            <label for="c-fact">Facteur de l'huile<input id="c-fact" type="number" step="0.01" min="0.1" max="5" inputmode="decimal" required></label>
+            <label for="c-ph">pH (facultatif)<input id="c-ph" type="number" step="0.1" min="0" max="14" inputmode="decimal"></label>
+            <label for="c-app">Appoint (litres, facultatif)<input id="c-app" type="number" step="1" min="0" max="5000" inputmode="numeric"></label>
+          </div>
+          <p class="calc" id="c-calc">Concentration calculée : –</p>
+          <label class="check" for="c-vid"><input type="checkbox" id="c-vid"> <span>Bac vidé et nettoyé aujourd'hui</span></label>
+          <div class="actions"><button class="btn primary" type="submit">Enregistrer le relevé</button></div>
+        </form>
+      </div>
+
+      <div class="panel">
+        <div class="panel-h"><h2>Historique</h2></div>
+        <ul class="hist" id="ms-hist"></ul>
+      </div>
+
+      <div class="panel">
+        <div class="panel-h"><h2>Étiquette QR</h2></div>
+        <div class="panel-b qrrow" id="ms-qr"></div>
+      </div>
+
+      <details class="panel" id="ms-settings">
+        <summary class="panel-h"><h2>Réglages de la machine</h2><span class="chev"><span class="closed">Ouvrir</span><span class="opened">Fermer</span></span></summary>
+        <form id="f-set" class="panel-b form">
+          <div class="grid4">
+            <label for="s-min">Concentration mini (%)<input id="s-min" type="number" step="0.1" min="0" max="30" inputmode="decimal" required></label>
+            <label for="s-max">Concentration maxi (%)<input id="s-max" type="number" step="0.1" min="0" max="30" inputmode="decimal" required></label>
+            <label for="s-ph">pH mini<input id="s-ph" type="number" step="0.1" min="0" max="14" inputmode="decimal" required></label>
+            <label for="s-fact">Facteur réfractomètre<input id="s-fact" type="number" step="0.01" min="0.1" max="5" inputmode="decimal" required></label>
+          </div>
+          <label class="check" for="s-liq"><input type="checkbox" id="s-liq"> <span>Suivre le liquide de coupe de cette machine</span></label>
+          <p class="hint">Le facteur figure sur la fiche technique de votre huile soluble. Concentration (%) = lecture en °Brix × facteur. Réglez la plage cible selon les recommandations de votre fournisseur.</p>
+          <div class="actions">
+            <button type="button" class="btn danger" data-act="m-del">Supprimer la machine</button>
+            <button class="btn primary" type="submit">Enregistrer les réglages</button>
+          </div>
+        </form>
+      </details>
+    </div>
+  </section>
+
+  <!-- Étiquettes -->
+  <section id="v-etiquettes" class="view" aria-labelledby="h-labels" hidden>
+    <div class="page-h">
+      <h1 id="h-labels">Étiquettes QR</h1>
+      <p class="lede">Collez une étiquette sur chaque machine. En la scannant, l'opérateur ouvre directement la fiche de la machine pour signaler une panne ou valider un entretien.</p>
+    </div>
+    <div class="panel">
+      <div class="panel-b form">
+        <p class="hint">Les personnes qui scannent doivent avoir un compte COPO dans votre atelier (code d'invitation dans l'onglet Atelier).</p>
+        <div class="actions start"><button class="btn primary" type="button" id="lbl-dl" data-act="lbl-dl" hidden>Télécharger la planche d'étiquettes (PNG)</button></div>
+      </div>
+    </div>
+    <div class="labels" id="lbl-grid"></div>
+  </section>
+</main>
+
+<div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
+<div id="lightbox" class="lightbox" hidden><img id="lb-img" alt="Photo jointe au signalement"><button class="btn" type="button" data-act="close-lb">Fermer</button></div>
+
+<script src="config.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.js"></script>
+<script>
+(() => {
+"use strict";
+
+// Filled in after the first publish so QR codes point at this page.
+const APP_URL = "";
+
+const DAY = 86400000;
+const TYPES = { vmc: "Centre d'usinage vertical", hmc: "Centre d'usinage horizontal", tour: "Tour CN", autre: "Autre machine" };
+const GRAV = {
+  arret:   { label: "Machine à l'arrêt", short: "À l'arrêt", tone: "stop" },
+  degrade: { label: "Mode dégradé", short: "Dégradé", tone: "warn" },
+  mineur:  { label: "Défaut mineur", short: "Mineur", tone: "neutral" }
+};
+const PLAN_VMC = [
+  ["Vérifier le niveau d'huile de graissage", 1],
+  ["Évacuer les copeaux et nettoyer le convoyeur", 1],
+  ["Purger le filtre régulateur d'air", 7],
+  ["Nettoyer le cône de broche et les attachements", 7],
+  ["Nettoyer les filtres du bac de liquide de coupe", 14],
+  ["Nettoyer les filtres de ventilation de l'armoire électrique", 30],
+  ["Graisser le changeur d'outils", 30],
+  ["Vider et nettoyer le bac de liquide de coupe", 180],
+  ["Contrôler la géométrie et les jeux des axes", 365]
+];
+const PLANS = {
+  vmc: PLAN_VMC,
+  hmc: [...PLAN_VMC.slice(0, 4), ["Nettoyer les palettes et leurs cônes de bridage", 7], ...PLAN_VMC.slice(4)],
+  tour: [
+    ["Vérifier le niveau d'huile de graissage", 1],
+    ["Évacuer les copeaux et nettoyer le convoyeur", 1],
+    ["Graisser les mors du mandrin", 7],
+    ["Vérifier le niveau et la pression du groupe hydraulique", 7],
+    ["Purger le filtre régulateur d'air", 7],
+    ["Nettoyer les filtres de ventilation de l'armoire électrique", 30],
+    ["Contrôler la contre-pointe et le fourreau", 30],
+    ["Vider et nettoyer le bac de liquide de coupe", 180],
+    ["Vidanger le groupe hydraulique", 365]
+  ],
+  autre: [
+    ["Nettoyer la machine et évacuer les copeaux", 1],
+    ["Vérifier les niveaux d'huile", 7],
+    ["Contrôle général de l'état de la machine", 30]
+  ]
+};
+const COLS = ["machines", "taches", "pannes", "coolant", "interventions"];
+
+const S = {
+  db: null, dl: null, dbState: "loading",
+  machines: [], taches: [], pannes: [], coolant: [], interventions: [], config: {},
+  loaded: {}, view: "tableau", prev: "tableau", mid: null, filledFor: null,
+  resolving: null, photos: new Map(), photoPending: new Set()
+};
+
+/* ---------- helpers ---------- */
+const $ = (s, r = document) => r.querySelector(s);
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+const rid = p => `${p}-${Date.now().toString(36)}${Math.random().toString(36).slice(2, 7)}`;
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+const sod = t => { const d = new Date(t); d.setHours(0, 0, 0, 0); return d.getTime(); };
+const dayDiff = (a, b) => Math.round((sod(b) - sod(a)) / DAY);
+const ts = iso => Date.parse(iso) || 0;
+const fmtNum = (v, d = 1) => Number(v).toLocaleString("fr-FR", { minimumFractionDigits: d, maximumFractionDigits: d });
+const fmtSmart = v => fmtNum(v, Number.isInteger(Number(v)) ? 0 : 1);
+const fmtDate = iso => {
+  const d = new Date(iso), now = new Date();
+  const o = { day: "numeric", month: "short" };
+  if (d.getFullYear() !== now.getFullYear()) o.year = "numeric";
+  return d.toLocaleDateString("fr-FR", o);
+};
+const fmtDateTime = iso => {
+  const d = new Date(iso);
+  return `${fmtDate(iso)} ${d.toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" })}`;
+};
+const ago = iso => {
+  const s = (Date.now() - ts(iso)) / 1000;
+  if (s < 60) return "à l'instant";
+  if (s < 3600) return `il y a ${Math.floor(s / 60)} min`;
+  if (s < 86400) return `il y a ${Math.floor(s / 3600)} h`;
+  const d = dayDiff(ts(iso), Date.now());
+  if (d < 31) return `il y a ${d} j`;
+  return `le ${fmtDate(iso)}`;
+};
+const freqLabel = n => ({ 1: "Chaque jour", 7: "Chaque semaine", 14: "Toutes les 2 semaines", 30: "Chaque mois", 90: "Chaque trimestre", 180: "Tous les 6 mois", 365: "Chaque année" }[n] || `Tous les ${n} jours`);
+const pill = (text, tone) => `<span class="pill" data-tone="${tone}">${esc(text)}</span>`;
+const lamp = (tone, big) => `<span class="lamp${big ? " big" : ""}" data-tone="${tone}" aria-hidden="true"><i></i><i></i><i></i></span>`;
+const me = () => ($("#me-name").value || "").trim() || "Non renseigné";
+const machineById = id => S.machines.find(m => m.id === id);
+const modelLine = m => [m.marque, m.modele].filter(Boolean).join(" ") || TYPES[m.type] || "";
+const sortedMachines = () => [...S.machines].sort((a, b) => String(a.nom).localeCompare(String(b.nom), "fr", { numeric: true }));
+const effectiveUrl = () => location.origin + location.pathname;
+const allLoaded = () => COLS.every(c => S.loaded[c]);
+
+let toastTimer;
+function toast(msg) {
+  const t = $("#toast");
+  t.textContent = msg; t.hidden = false;
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => { t.hidden = true; }, 3600);
+}
+
+/* ---------- derived state ---------- */
+function taskDue(t) {
+  const base = ts(t.lastDone || t.createdAt);
+  const due = base + t.freq * DAY;
+  const left = dayDiff(Date.now(), due);
+  let label, tone;
+  if (left < 0) { label = `En retard de ${-left} j`; tone = "warn"; }
+  else if (left === 0) { label = "Aujourd'hui"; tone = "info"; }
+  else if (left === 1) { label = "Demain"; tone = "neutral"; }
+  else { label = `Dans ${left} j`; tone = "neutral"; }
+  return { due, left, label, tone };
+}
+function tasksOf(mid) {
+  return S.taches.filter(t => t.machineId === mid).map(t => ({ t, d: taskDue(t) })).sort((a, b) => a.d.due - b.d.due);
+}
+function coolState(m) {
+  if (!m.liquide) return { on: false, rs: [] };
+  const rs = S.coolant.filter(r => r.machineId === m.id).sort((a, b) => ts(a.date) - ts(b.date));
+  const last = rs[rs.length - 1];
+  let alert = null, short = null;
+  if (last) {
+    if (last.conc < m.concMin) { alert = `Concentration basse : ${fmtNum(last.conc)} % (mini ${fmtSmart(m.concMin)} %)`; short = "concentration basse"; }
+    else if (last.conc > m.concMax) { alert = `Concentration haute : ${fmtNum(last.conc)} % (maxi ${fmtSmart(m.concMax)} %)`; short = "concentration haute"; }
+    else if (last.ph != null && last.ph < m.phMin) { alert = `pH bas : ${fmtNum(last.ph)} (mini ${fmtNum(m.phMin)})`; short = "pH bas"; }
+    else {
+      const d = dayDiff(ts(last.date), Date.now());
+      if (d > 7) { alert = `Pas de relevé depuis ${d} jours`; short = `relevé il y a ${d} j`; }
+    }
+  } else if (dayDiff(ts(m.createdAt), Date.now()) > 7) {
+    alert = "Aucun relevé enregistré"; short = "aucun relevé";
+  }
+  return { on: true, rs, last, alert, short };
+}
+function openPannes(mid) {
+  return S.pannes.filter(p => p.statut === "ouverte" && (!mid || p.machineId === mid))
+    .sort((a, b) => ({ arret: 0, degrade: 1, mineur: 2 }[a.gravite] - { arret: 0, degrade: 1, mineur: 2 }[b.gravite]) || ts(b.createdAt) - ts(a.createdAt));
+}
+function machineState(m) {
+  const op = openPannes(m.id);
+  if (op.some(p => p.gravite === "arret")) return { tone: "stop", label: "À l'arrêt" };
+  if (op.some(p => p.gravite === "degrade")) return { tone: "warn", label: "Mode dégradé" };
+  if (op.length) return { tone: "warn", label: "Défaut signalé" };
+  if (tasksOf(m.id).some(x => x.d.left < 0)) return { tone: "warn", label: "Entretien en retard" };
+  if (coolState(m).alert) return { tone: "warn", label: "Liquide à corriger" };
+  return { tone: "ok", label: "En service" };
+}
+function downtimeHours(mid) {
+  const now = Date.now(), start = now - 30 * DAY;
+  let ms = 0;
+  for (const p of S.pannes) {
+    if (p.gravite !== "arret" || (mid && p.machineId !== mid) || !machineById(p.machineId)) continue;
+    const s = Math.max(start, ts(p.createdAt));
+    const e = p.resolvedAt ? ts(p.resolvedAt) : now;
+    if (e > s) ms += e - s;
+  }
+  return ms / 3600000;
+}
+
+/* ---------- QR ---------- */
+function drawQr(ctx, text, x, y, size, quiet = 4) {
+  ctx.fillStyle = "#ffffff";
+  ctx.fillRect(x, y, size, size);
+  if (window.qrcode) {
+    const qr = window.qrcode(0, "M");
+    qr.addData(text); qr.make();
+    const n = qr.getModuleCount();
+    const cell = size / (n + 2 * quiet);
+    const off = quiet * cell;
+    const edge = i => Math.round(off + i * cell);
+    ctx.fillStyle = "#000000";
+    for (let r = 0; r < n; r++) for (let c = 0; c < n; c++) {
+      if (qr.isDark(r, c)) ctx.fillRect(x + edge(c), y + edge(r), edge(c + 1) - edge(c), edge(r + 1) - edge(r));
+    }
+    return true;
+  }
+  if (window.QRCode) {
+    const div = document.createElement("div");
+    const inner = Math.round(size * 0.84);
+    new window.QRCode(div, { text, width: inner, height: inner, colorDark: "#000000", colorLight: "#ffffff", correctLevel: window.QRCode.CorrectLevel.M });
+    const c = div.querySelector("canvas");
+    if (c) { ctx.drawImage(c, x + (size - inner) / 2, y + (size - inner) / 2, inner, inner); return true; }
+  }
+  return false;
+}
+function qrCanvas(text, size) {
+  const ratio = Math.min(3, window.devicePixelRatio || 1);
+  const c = document.createElement("canvas");
+  c.width = Math.round(size * ratio); c.height = Math.round(size * ratio);
+  c.style.width = size + "px"; c.style.height = size + "px";
+  const ok = drawQr(c.getContext("2d"), text, 0, 0, c.width, 1);
+  c.setAttribute("role", "img");
+  c.setAttribute("aria-label", ok ? "QR code de la machine" : "QR code indisponible");
+  return c;
+}
+function ensureQrLib() {
+  if (window.qrcode || window.QRCode) return;
+  const s = document.createElement("script");
+  s.src = "https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js";
+  s.onload = () => scheduleRender();
+  document.head.appendChild(s);
+}
+
+/* ---------- render ---------- */
+let rafId = 0;
+function scheduleRender() { if (!rafId) rafId = requestAnimationFrame(() => { rafId = 0; render(); }); }
+
+function render() {
+  const stage = S.stage;
+  $("#v-auth").hidden = stage !== "auth";
+  $("#v-onboard").hidden = stage !== "onboard";
+  if (stage !== "app") {
+    ["tableau", "machines", "machine", "etiquettes", "atelier"].forEach(v => { $("#v-" + v).hidden = true; });
+    $("#example-banner").hidden = true;
+    return;
+  }
+  document.querySelectorAll(".tab").forEach(b => {
+    const on = b.dataset.go === (S.view === "machine" ? S.prev : S.view);
+    if (on) b.setAttribute("aria-current", "page"); else b.removeAttribute("aria-current");
+  });
+  ["tableau", "machines", "machine", "etiquettes", "atelier"].forEach(v => { $("#v-" + v).hidden = S.view !== v; });
+  const hasEx = COLS.some(c => S[c].some(d => d.exemple));
+  $("#example-banner").hidden = !hasEx;
+  if (S.view === "tableau") renderDash();
+  else if (S.view === "machines") renderMachines();
+  else if (S.view === "machine") renderSheet();
+  else if (S.view === "etiquettes") renderLabels();
+  else if (S.view === "atelier") renderAtelier();
+  hydratePhotos();
+}
+
+function tile(value, label, tone) {
+  return `<div class="tile" data-tone="${tone}"><span class="n">${value}</span><span class="l">${esc(label)}</span></div>`;
+}
+
+function renderDash() {
+  const d = new Date().toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long", year: "numeric" });
+  $("#dash-date").textContent = d.charAt(0).toUpperCase() + d.slice(1);
+  if (!allLoaded()) return;
+  const ms = sortedMachines();
+  const stopped = ms.filter(m => machineState(m).tone === "stop").length;
+  const overdue = S.taches.filter(t => machineById(t.machineId) && taskDue(t).left < 0).length;
+  const cool = ms.filter(m => coolState(m).alert).length;
+  const hours = downtimeHours(null);
+  $("#dash-tiles").innerHTML = [
+    tile(stopped, "Machines à l'arrêt", stopped ? "stop" : "ok"),
+    tile(overdue, "Entretiens en retard", overdue ? "warn" : "ok"),
+    tile(cool, "Alertes liquide de coupe", cool ? "warn" : "ok"),
+    tile(`${fmtNum(hours, 1)}<small> h</small>`, "Arrêt machines sur 30 jours", "neutral")
+  ].join("");
+
+  if (!ms.length) {
+    $("#todo-count").textContent = "";
+    $("#dash-todo").innerHTML = `<div class="empty stack-y"><p>Aucune machine pour l'instant. Ajoutez votre première machine : son plan d'entretien type est chargé automatiquement.</p><div class="actions start"><button class="btn primary" type="button" data-act="add-first">Ajouter une machine</button></div></div>`;
+    $("#dash-grid").innerHTML = "";
+    return;
+  }
+
+  const items = [];
+  for (const p of openPannes(null)) {
+    const m = machineById(p.machineId); if (!m) continue;
+    const g = GRAV[p.gravite] || GRAV.mineur;
+    items.push({ rank: { arret: 0, degrade: 1, mineur: 3 }[p.gravite] ?? 3, mid: m.id, title: m.nom, sub: `${p.description} · signalée ${ago(p.createdAt)}`, pill: pill(g.short, g.tone) });
+  }
+  for (const t of S.taches) {
+    const m = machineById(t.machineId); if (!m) continue;
+    const dd = taskDue(t);
+    if (dd.left < 0) items.push({ rank: 2, mid: m.id, title: m.nom, sub: t.label, pill: pill(dd.label, "warn") });
+  }
+  for (const m of ms) {
+    const c = coolState(m);
+    if (c.alert) items.push({ rank: 2.5, mid: m.id, title: m.nom, sub: c.alert, pill: pill("Liquide", "warn") });
+  }
+  items.sort((a, b) => a.rank - b.rank);
+  $("#todo-count").textContent = items.length ? `${items.length} point${items.length > 1 ? "s" : ""}` : "";
+  $("#dash-todo").innerHTML = items.length
+    ? items.map(i => `<button class="item" type="button" data-open="${esc(i.mid)}"><span class="min0"><span class="t">${esc(i.title)}</span><br><span class="s">${esc(i.sub)}</span></span>${i.pill}</button>`).join("")
+    : `<p class="empty">Rien à traiter. Toutes les machines sont en service et à jour.</p>`;
+  $("#dash-grid").innerHTML = ms.map(mcard).join("");
+}
+
+function mcard(m) {
+  const st = machineState(m);
+  const next = tasksOf(m.id)[0];
+  const c = coolState(m);
+  const cool = !c.on ? `<span class="muted">non suivi</span>`
+    : c.last ? `<span class="mono">${fmtNum(c.last.conc)} %</span>${c.alert ? ` <span class="tone-warn">· ${esc(c.short)}</span>` : ""}`
+    : `<span class="muted">aucun relevé</span>`;
+  return `<button class="mcard" type="button" data-open="${esc(m.id)}">
+    <span class="mcard-top">${lamp(st.tone)}<span class="min0"><span class="nm">${esc(m.nom)}</span><br><span class="sub">${esc(modelLine(m))}${m.emplacement ? " · " + esc(m.emplacement) : ""}</span></span></span>
+    <span>${pill(st.label, st.tone)}</span>
+    <span class="kv">
+      <span class="k">Entretien</span><span class="v">${next ? `${esc(next.t.label)} <span class="${next.d.left < 0 ? "tone-warn" : "muted"}">· ${esc(next.d.label.toLowerCase())}</span>` : `<span class="muted">aucune tâche</span>`}</span>
+      <span class="k">Liquide</span><span class="v">${cool}</span>
+    </span>
+  </button>`;
+}
+
+function renderMachines() {
+  const ms = sortedMachines();
+  const add = $("#add-panel");
+  if (allLoaded() && !ms.length && !add.dataset.touched) add.open = true;
+  if (!allLoaded()) return;
+  $("#m-list").innerHTML = ms.length
+    ? ms.map(m => {
+        const st = machineState(m);
+        return `<button class="row" type="button" data-open="${esc(m.id)}">${lamp(st.tone)}<span class="min0"><span class="nm">${esc(m.nom)}</span><br><span class="sub">${esc(TYPES[m.type] || "")} · ${esc(modelLine(m))}${m.emplacement ? " · " + esc(m.emplacement) : ""}</span></span>${pill(st.label, st.tone)}</button>`;
+      }).join("")
+    : `<p class="empty">Aucune machine. Utilisez le formulaire ci-dessus pour ajouter la première.</p>`;
+}
+
+function fillSheetForms(m) {
+  S.filledFor = m.id;
+  $("#f-panne").reset(); $("#f-panne").hidden = true; $("#p-preview").hidden = true;
+  $("#f-resolve").hidden = true; S.resolving = null;
+  $("#f-cool").reset(); $("#c-fact").value = m.facteur ?? 1; updateCalc();
+  $("#f-task").reset(); $("#task-add").open = false;
+  $("#s-min").value = m.concMin; $("#s-max").value = m.concMax; $("#s-ph").value = m.phMin; $("#s-fact").value = m.facteur ?? 1;
+  $("#s-liq").checked = !!m.liquide; $("#ms-settings").open = false;
+}
+
+function renderSheet() {
+  const m = machineById(S.mid);
+  const body = $("#ms-body");
+  if (!m) {
+    body.hidden = true;
+    $("#ms-head").innerHTML = S.loaded.machines || S.dbState === "off"
+      ? `<div class="page-h"><h1>Machine introuvable</h1><p class="lede">Cette machine a peut-être été supprimée, ou le lien est incomplet.</p></div>`
+      : `<p class="lede">Chargement de la fiche…</p>`;
+    return;
+  }
+  body.hidden = false;
+  if (S.filledFor !== m.id) fillSheetForms(m);
+  const st = machineState(m);
+  $("#ms-head").innerHTML = `<div class="head-l">${lamp(st.tone, true)}<div class="min0 page-h"><p class="eyebrow">${esc(TYPES[m.type] || "")}</p><h1>${esc(m.nom)}</h1><p class="lede">${esc(modelLine(m))}${m.emplacement ? " · " + esc(m.emplacement) : ""}</p></div></div>${pill(st.label, st.tone)}`;
+
+  // Pannes
+  const op = openPannes(m.id);
+  const stopP = op.find(p => p.gravite === "arret");
+  $("#ms-down").textContent = stopP ? `À l'arrêt depuis ${fmtNum((Date.now() - ts(stopP.createdAt)) / 3600000, 1)} h` : "";
+  $("#ms-pannes").innerHTML = op.length ? op.map(p => {
+    const g = GRAV[p.gravite] || GRAV.mineur;
+    const src = p.photoId ? S.photos.get(p.photoId) : null;
+    return `<div class="panne">
+      <div class="panne-h">${pill(g.short, g.tone)}<span class="hint">Signalée ${esc(ago(p.createdAt))} par ${esc(p.par || "Non renseigné")}</span></div>
+      ${p.alarme ? `<span class="alarm-code mono">${esc(p.alarme)}</span>` : ""}
+      <p>${esc(p.description)}</p>
+      ${p.photoId ? `<button class="thumb" type="button" data-act="lb" data-photo="${esc(p.photoId)}" aria-label="Agrandir la photo"><img data-pid="${esc(p.photoId)}" alt="Photo jointe" ${src ? `src="${src}"` : ""}></button>` : ""}
+      <div class="actions start"><button class="btn sm primary" type="button" data-act="resolve" data-id="${esc(p.id)}">Clôturer la panne</button></div>
+    </div>`;
+  }).join("") : `<p class="empty">Aucune panne en cours.</p>`;
+
+  // Tâches
+  const ts_ = tasksOf(m.id);
+  $("#ms-tasks").innerHTML = ts_.length ? ts_.map(({ t, d }) => `<div class="task">
+      <div class="min0"><div>${esc(t.label)}</div><div class="meta">${esc(freqLabel(t.freq))} · ${t.lastDone ? `fait le ${esc(fmtDate(t.lastDone))} par ${esc(t.lastBy || "Non renseigné")}` : "jamais fait"}</div></div>
+      ${pill(d.label, d.tone)}
+      <div class="t-act"><button class="btn sm" type="button" data-act="done" data-id="${esc(t.id)}">Fait</button><button class="btn sm ghost" type="button" data-act="task-del" data-id="${esc(t.id)}">Retirer</button></div>
+    </div>`).join("") : `<p class="empty">Aucune tâche d'entretien. Ajoutez-en une ci-dessous.</p>`;
+
+  // Liquide
+  const c = coolState(m);
+  $("#ms-cool-panel").hidden = !c.on;
+  if (c.on) {
+    $("#ms-cool-target").textContent = `Plage cible ${fmtSmart(m.concMin)}–${fmtSmart(m.concMax)} % · pH mini ${fmtNum(m.phMin)}`;
+    if (c.last) {
+      const L = c.last;
+      const out = L.conc < m.concMin || L.conc > m.concMax;
+      const phLow = L.ph != null && L.ph < m.phMin;
+      $("#ms-cool").innerHTML = `<div class="readouts">
+          <div class="read"${out ? ` data-tone="warn"` : ""}><span class="r-l">Concentration</span><span class="r-v">${fmtNum(L.conc)}<small> %</small></span><span class="r-s">${fmtNum(L.brix)} °Brix × ${fmtNum(L.facteur, 2)}</span></div>
+          <div class="read"${phLow ? ` data-tone="warn"` : ""}><span class="r-l">pH</span><span class="r-v">${L.ph != null ? fmtNum(L.ph) : "–"}</span><span class="r-s">mini ${fmtNum(m.phMin)}</span></div>
+          <div class="read"><span class="r-l">Dernier relevé</span><span class="r-v sm">${esc(fmtDate(L.date))}</span><span class="r-s">${esc(ago(L.date))} · ${esc(L.par || "Non renseigné")}</span></div>
+        </div>
+        ${c.alert ? `<p class="alert-line">${esc(c.alert)}</p>` : ""}
+        ${coolChart(m, c.rs)}`;
+    } else {
+      $("#ms-cool").innerHTML = `<p class="muted">Aucun relevé pour l'instant. Mesurez la concentration au réfractomètre et saisissez-la ci-dessous.</p>`;
+    }
+  }
+
+  // Historique
+  const ev = [];
+  for (const p of S.pannes.filter(p => p.machineId === m.id)) {
+    const g = GRAV[p.gravite] || GRAV.mineur;
+    ev.push({ t: p.createdAt, html: `<b>Panne signalée</b> (${esc(g.label.toLowerCase())}) : ${esc(p.description)}`, by: p.par });
+    if (p.resolvedAt) {
+      const h = (ts(p.resolvedAt) - ts(p.createdAt)) / 3600000;
+      ev.push({ t: p.resolvedAt, html: `<b>Panne clôturée</b> après ${fmtNum(h, 1)} h : ${esc(p.resolution || "")}`, by: p.resolvedBy });
+    }
+  }
+  for (const i of S.interventions.filter(i => i.machineId === m.id)) ev.push({ t: i.date, html: `<b>Entretien</b> : ${esc(i.label)}`, by: i.par });
+  for (const r of S.coolant.filter(r => r.machineId === m.id)) {
+    const parts = [`${fmtNum(r.conc)} %`];
+    if (r.ph != null) parts.push(`pH ${fmtNum(r.ph)}`);
+    if (r.appoint) parts.push(`appoint ${r.appoint} L`);
+    ev.push({ t: r.date, html: `<b>Relevé liquide</b> : ${parts.join(" · ")}${r.vidange ? " · bac vidé et nettoyé" : ""}`, by: r.par });
+  }
+  ev.sort((a, b) => ts(b.t) - ts(a.t));
+  $("#ms-hist").innerHTML = ev.length
+    ? ev.slice(0, 30).map(e => `<li><time datetime="${esc(e.t)}">${esc(fmtDateTime(e.t))}</time><span>${e.html}${e.by ? ` <span class="by">· ${esc(e.by)}</span>` : ""}</span></li>`).join("")
+    : `<li><span></span><span class="muted">Rien pour l'instant.</span></li>`;
+
+  // QR
+  const url = effectiveUrl();
+  const qr = $("#ms-qr");
+  qr.innerHTML = "";
+  if (url) {
+    const box = document.createElement("div"); box.className = "qrbox";
+    box.appendChild(qrCanvas(`${url}#${m.id}`, 132));
+    const info = document.createElement("div"); info.className = "min0 stack-y";
+    info.innerHTML = `<p class="hint">Ce QR code ouvre directement cette fiche.</p><p class="url">${esc(url)}#${esc(m.id)}</p><div class="actions start"><button class="btn sm" type="button" data-act="copy-link">Copier le lien</button><button class="btn sm" type="button" data-go="etiquettes">Toutes les étiquettes</button></div>`;
+    qr.append(box, info);
+  } else {
+    qr.innerHTML = `<p class="hint">Renseignez l'adresse de l'appli dans l'onglet Étiquettes QR pour générer le QR code.</p>`;
+  }
+}
+
+function coolChart(m, rs) {
+  const pts = rs.slice(-12);
+  if (pts.length < 2) return "";
+  const W = 340, H = 118, L = 40, R = 12, T = 10, B = 22;
+  const vals = pts.map(r => r.conc);
+  const lo = Math.min(m.concMin - 1, ...vals.map(v => v - 0.5));
+  const hi = Math.max(m.concMax + 1, ...vals.map(v => v + 0.5));
+  const y = v => T + (hi - v) / (hi - lo) * (H - T - B);
+  const x = i => L + i * (W - L - R) / (pts.length - 1);
+  const band = `<rect x="${L}" y="${y(m.concMax).toFixed(1)}" width="${W - L - R}" height="${(y(m.concMin) - y(m.concMax)).toFixed(1)}" class="c-band"/>`;
+  const grid = [m.concMin, m.concMax].map(v => `<line x1="${L}" x2="${W - R}" y1="${y(v).toFixed(1)}" y2="${y(v).toFixed(1)}" class="c-grid"/><text x="${L - 6}" y="${(y(v) + 3.5).toFixed(1)}" text-anchor="end" class="c-lbl">${fmtSmart(v)} %</text>`).join("");
+  const line = `<polyline points="${pts.map((r, i) => `${x(i).toFixed(1)},${y(r.conc).toFixed(1)}`).join(" ")}" class="c-line"/>`;
+  const dots = pts.map((r, i) => {
+    const last = i === pts.length - 1, out = r.conc < m.concMin || r.conc > m.concMax;
+    return `<circle cx="${x(i).toFixed(1)}" cy="${y(r.conc).toFixed(1)}" r="${last ? 4.5 : 2.6}" class="c-dot${out ? " out" : ""}${last ? " last" : ""}"/>`;
+  }).join("");
+  const xl = `<text x="${L}" y="${H - 6}" class="c-lbl">${esc(fmtDate(pts[0].date))}</text><text x="${W - R}" y="${H - 6}" text-anchor="end" class="c-lbl">${esc(fmtDate(pts[pts.length - 1].date))}</text>`;
+  return `<svg class="cchart" viewBox="0 0 ${W} ${H}" role="img" aria-label="Concentration sur les ${pts.length} derniers relevés, plage cible en vert">${band}${grid}${line}${dots}${xl}</svg>`;
+}
+
+const LABEL_MARK = "<svg class=\"l-mark\" viewBox=\"0 0 100 100\" aria-hidden=\"true\"><defs><radialGradient id=\"lbl-g\" gradientUnits=\"userSpaceOnUse\" cx=\"44.22\" cy=\"58.18\" r=\"45.35\"><stop offset=\"0.0\" stop-color=\"#f6d98a\"/><stop offset=\"0.16\" stop-color=\"#e8ac45\"/><stop offset=\"0.36\" stop-color=\"#c06a2b\"/><stop offset=\"0.52\" stop-color=\"#8a4a86\"/><stop offset=\"0.68\" stop-color=\"#4a68b4\"/><stop offset=\"0.86\" stop-color=\"#2a63a8\"/><stop offset=\"1.0\" stop-color=\"#1d4f86\"/></radialGradient></defs><path d=\"M40.79 59.59 L40.81 59.75 L40.81 59.91 L40.80 60.07 L40.81 60.23 L40.81 60.39 L40.82 60.55 L40.84 60.72 L40.86 60.89 L40.89 61.06 L40.93 61.23 L40.98 61.40 L41.03 61.58 L41.09 61.75 L41.16 61.93 L41.23 62.10 L41.32 62.28 L41.41 62.45 L41.52 62.63 L41.63 62.80 L41.75 62.97 L41.88 63.14 L42.02 63.31 L42.17 63.47 L42.33 63.63 L42.50 63.79 L42.68 63.94 L42.86 64.08 L43.06 64.22 L43.26 64.36 L43.47 64.49 L43.69 64.61 L43.92 64.72 L44.16 64.83 L44.40 64.92 L44.66 65.01 L44.92 65.09 L45.18 65.16 L45.46 65.22 L45.74 65.26 L46.02 65.30 L46.31 65.33 L46.61 65.34 L46.90 65.34 L47.21 65.33 L47.51 65.31 L47.82 65.27 L48.13 65.22 L48.45 65.16 L48.76 65.08 L49.08 64.99 L49.39 64.89 L49.70 64.77 L50.02 64.64 L50.33 64.49 L50.64 64.33 L50.94 64.15 L51.24 63.96 L51.54 63.75 L51.83 63.53 L52.11 63.30 L52.39 63.05 L52.66 62.79 L52.92 62.51 L53.17 62.22 L53.42 61.92 L53.65 61.61 L53.88 61.28 L54.09 60.94 L54.29 60.58 L54.48 60.22 L54.65 59.85 L54.81 59.46 L54.96 59.06 L55.09 58.66 L55.21 58.24 L55.31 57.82 L55.40 57.39 L55.46 56.95 L55.51 56.51 L55.55 56.06 L55.56 55.60 L55.56 55.14 L55.54 54.68 L55.49 54.21 L55.43 53.75 L55.35 53.28 L55.25 52.81 L55.13 52.34 L55.00 51.87 L54.84 51.40 L54.66 50.94 L54.46 50.47 L54.24 50.02 L54.00 49.57 L53.74 49.12 L53.46 48.69 L53.16 48.26 L52.84 47.84 L52.50 47.43 L52.14 47.03 L51.76 46.64 L51.37 46.27 L50.96 45.91 L50.53 45.56 L50.08 45.23 L49.62 44.91 L49.14 44.61 L48.64 44.33 L48.13 44.06 L47.61 43.81 L47.08 43.59 L46.53 43.38 L45.96 43.19 L45.39 43.03 L44.81 42.89 L44.22 42.77 L43.62 42.67 L43.01 42.59 L42.40 42.54 L41.77 42.52 L41.15 42.52 L40.52 42.54 L39.89 42.59 L39.25 42.67 L38.62 42.77 L37.99 42.89 L37.35 43.05 L36.72 43.23 L36.10 43.43 L35.47 43.67 L34.86 43.92 L34.25 44.21 L33.65 44.52 L33.05 44.85 L32.47 45.22 L31.90 45.60 L31.34 46.02 L30.80 46.45 L30.27 46.91 L29.75 47.40 L29.25 47.90 L28.77 48.43 L28.31 48.99 L27.87 49.56 L27.44 50.15 L27.04 50.77 L26.67 51.40 L26.31 52.05 L25.98 52.72 L25.68 53.41 L25.40 54.11 L25.14 54.82 L24.92 55.55 L24.72 56.29 L24.55 57.05 L24.41 57.81 L24.30 58.58 L24.22 59.37 L24.17 60.15 L24.15 60.95 L24.17 61.74 L24.21 62.55 L24.29 63.35 L24.40 64.15 L24.54 64.96 L24.72 65.76 L24.92 66.55 L25.16 67.35 L25.44 68.13 L25.74 68.91 L26.08 69.68 L26.45 70.45 L26.85 71.19 L27.29 71.93 L27.75 72.65 L28.25 73.36 L28.77 74.05 L29.33 74.72 L29.91 75.38 L30.52 76.01 L31.16 76.62 L31.83 77.21 L32.52 77.77 L33.24 78.31 L33.99 78.83 L34.75 79.31 L35.54 79.77 L36.35 80.19 L37.18 80.59 L38.03 80.96 L38.90 81.29 L39.78 81.59 L40.68 81.86 L41.59 82.09 L42.52 82.28 L43.46 82.44 L44.40 82.57 L45.36 82.65 L46.32 82.70 L47.29 82.71 L48.26 82.69 L49.24 82.62 L50.21 82.51 L51.19 82.37 L52.16 82.19 L53.13 81.96 L54.10 81.70 L55.05 81.40 L56.00 81.06 L56.94 80.68 L57.87 80.26 L58.78 79.81 L59.68 79.32 L60.56 78.78 L61.43 78.22 L62.27 77.61 L63.10 76.97 L63.90 76.30 L64.68 75.59 L65.43 74.85 L66.15 74.08 L66.85 73.27 L67.52 72.44 L68.16 71.57 L68.76 70.68 L69.33 69.76 L69.87 68.81 L70.37 67.84 L70.83 66.85 L71.26 65.84 L71.65 64.80 L72.00 63.75 L72.30 62.68 L72.57 61.59 L72.80 60.49 L72.98 59.38 L73.11 58.26 L73.21 57.13 L73.26 55.99 L73.26 54.84 L73.22 53.70 L73.14 52.55 L73.00 51.40 L72.83 50.25 L72.60 49.10 L72.33 47.96 L72.02 46.83 L71.66 45.71 L71.25 44.60 L70.80 43.50 L70.30 42.41 L69.76 41.34 L69.18 40.29 L68.55 39.26 L67.88 38.25 L67.17 37.27 L66.41 36.31 L65.62 35.38 L64.79 34.48 L63.92 33.60 L62.35 31.96 L60.79 30.31 L59.23 28.67 L57.67 27.02 L56.10 25.38 L54.54 23.74 L52.98 22.09 L51.42 20.45 L49.85 18.80 L48.29 17.16 L46.73 15.51 L40.73 9.48 L53.93 5.00 L55.59 6.54 L57.26 8.09 L58.92 9.63 L60.58 11.17 L62.24 12.72 L63.91 14.26 L65.57 15.81 L67.23 17.35 L68.89 18.89 L70.55 20.44 L72.22 21.98 L73.88 23.52 L75.12 24.82 L76.30 26.16 L77.42 27.54 L78.49 28.95 L79.50 30.41 L80.44 31.90 L81.32 33.42 L82.14 34.97 L82.90 36.54 L83.59 38.14 L84.21 39.76 L84.77 41.39 L85.26 43.05 L85.69 44.71 L86.04 46.39 L86.33 48.07 L86.56 49.75 L86.71 51.44 L86.80 53.13 L86.82 54.82 L86.77 56.49 L86.66 58.16 L86.49 59.82 L86.25 61.47 L85.94 63.09 L85.57 64.70 L85.14 66.29 L84.65 67.86 L84.11 69.40 L83.50 70.91 L82.83 72.39 L82.11 73.83 L81.34 75.25 L80.51 76.62 L79.63 77.96 L78.71 79.26 L77.73 80.52 L76.71 81.73 L75.65 82.90 L74.55 84.01 L73.41 85.09 L72.23 86.11 L71.01 87.08 L69.76 88.00 L68.48 88.86 L67.18 89.67 L65.84 90.43 L64.48 91.13 L63.11 91.77 L61.71 92.36 L60.29 92.89 L58.86 93.35 L57.42 93.77 L55.97 94.12 L54.51 94.41 L53.05 94.65 L51.58 94.82 L50.11 94.94 L48.65 95.00 L47.19 95.00 L45.74 94.94 L44.29 94.83 L42.86 94.66 L41.44 94.43 L40.04 94.15 L38.65 93.82 L37.29 93.43 L35.94 92.99 L34.62 92.49 L33.33 91.95 L32.06 91.36 L30.82 90.73 L29.61 90.04 L28.44 89.32 L27.30 88.54 L26.20 87.73 L25.13 86.88 L24.11 85.99 L23.12 85.07 L22.17 84.11 L21.27 83.11 L20.41 82.09 L19.60 81.04 L18.83 79.96 L18.11 78.85 L17.44 77.73 L16.81 76.58 L16.23 75.41 L15.70 74.23 L15.23 73.03 L14.80 71.82 L14.42 70.60 L14.09 69.37 L13.81 68.13 L13.59 66.89 L13.41 65.64 L13.28 64.40 L13.21 63.15 L13.18 61.91 L13.20 60.68 L13.27 59.45 L13.39 58.24 L13.56 57.03 L13.78 55.84 L14.04 54.66 L14.34 53.50 L14.69 52.36 L15.09 51.23 L15.52 50.13 L16.00 49.06 L16.52 48.01 L17.07 46.98 L17.67 45.98 L18.30 45.01 L18.96 44.08 L19.66 43.17 L20.39 42.30 L21.16 41.46 L21.95 40.66 L22.76 39.89 L23.61 39.16 L24.48 38.47 L25.37 37.81 L26.28 37.20 L27.21 36.62 L28.15 36.09 L29.12 35.60 L30.09 35.15 L31.08 34.74 L32.08 34.37 L33.09 34.04 L34.11 33.76 L35.12 33.52 L36.15 33.32 L37.17 33.16 L38.20 33.05 L39.22 32.97 L40.24 32.94 L41.25 32.95 L42.26 33.00 L43.26 33.09 L44.25 33.22 L45.23 33.39 L46.19 33.59 L47.14 33.83 L48.07 34.11 L48.99 34.43 L49.89 34.78 L50.76 35.16 L51.62 35.58 L52.45 36.03 L53.26 36.50 L54.05 37.01 L54.81 37.55 L55.54 38.11 L56.24 38.70 L56.92 39.31 L57.57 39.95 L58.18 40.60 L58.77 41.28 L59.32 41.98 L59.85 42.69 L60.34 43.42 L60.79 44.16 L61.22 44.92 L61.61 45.69 L61.96 46.46 L62.28 47.25 L62.57 48.05 L62.82 48.85 L63.04 49.65 L63.23 50.46 L63.38 51.26 L63.49 52.07 L63.57 52.88 L63.62 53.68 L63.64 54.48 L63.62 55.27 L63.57 56.06 L63.49 56.84 L63.38 57.61 L63.24 58.36 L63.07 59.11 L62.86 59.84 L62.63 60.56 L62.38 61.26 L62.09 61.95 L61.78 62.62 L61.45 63.27 L61.09 63.90 L60.71 64.51 L60.31 65.10 L59.88 65.67 L59.44 66.22 L58.98 66.74 L58.50 67.24 L58.00 67.71 L57.49 68.16 L56.97 68.59 L56.43 68.98 L55.88 69.36 L55.32 69.70 L54.75 70.02 L54.17 70.32 L53.59 70.58 L53.00 70.82 L52.40 71.03 L51.81 71.22 L51.21 71.37 L50.61 71.50 L50.01 71.61 L49.41 71.69 L48.82 71.74 L48.23 71.76 L47.64 71.77 L47.06 71.74 L46.49 71.69 L45.93 71.62 L45.37 71.52 L44.83 71.40 L44.29 71.26 L43.77 71.10 L43.26 70.92 L42.77 70.71 L42.29 70.49 L41.82 70.25 L41.37 69.99 L40.94 69.72 L40.52 69.43 L40.13 69.12 L39.75 68.80 L39.38 68.47 L39.04 68.12 L38.72 67.76 L38.42 67.40 L38.14 67.02 L37.88 66.64 L37.64 66.25 L37.42 65.85 L37.22 65.45 L37.04 65.05 L36.89 64.64 L36.75 64.23 L36.64 63.82 L36.55 63.41 L36.47 63.00 L36.42 62.60 L36.39 62.19 L36.38 61.80 L36.39 61.40 L36.42 61.02 L36.47 60.64 L36.54 60.27 L36.62 59.91 L36.72 59.55 L36.85 59.22 L36.98 58.89 L37.14 58.58 L37.32 58.28 L37.53 58.01 Z\" fill=\"url(#lbl-g)\"/><path d=\"M47.65 35.53 L46.77 35.26 L45.88 35.03 L44.97 34.84 L44.05 34.68 L43.13 34.56 L42.19 34.47 L41.24 34.42 L40.28 34.41 L39.32 34.44 L38.36 34.51 L37.39 34.62 L36.43 34.76 L35.46 34.95 L34.50 35.18 L33.54 35.45 L32.59 35.75 L31.64 36.10 L30.71 36.48 L29.78 36.91 L28.87 37.38 L27.98 37.88 L27.10 38.42 L26.23 39.00 L25.39 39.62 L24.57 40.28 L23.77 40.97 L22.99 41.69 L22.24 42.46 L21.52 43.25 L20.83 44.08 L20.16 44.94 L19.53 45.82 L18.93 46.74 L18.37 47.69 L17.84 48.66 L17.34 49.66 L16.89 50.68 L16.48 51.73 L16.10 52.80 L15.77 53.88 L15.47 54.99 L15.23 56.11 L15.02 57.24 L14.86 58.39 L14.75 59.55 L14.68 60.72 L14.65 61.89 L14.68 63.07 L14.75 64.26 L14.87 65.44 L15.04 66.63 L15.25 67.81 L15.52 69.00 L15.83 70.17 L16.19 71.34 L16.60 72.49 L17.05 73.64 L17.56 74.77 L18.11 75.88 L18.71 76.98 L19.35 78.06 L20.04 79.11 L20.77 80.15 L21.55 81.15 L22.37 82.13 L23.23 83.08 L24.14 84.00 L25.08 84.89 L26.06 85.74 L27.08 86.55 L28.14 87.33 L29.23 88.07 L30.35 88.77 L31.51 89.42 L32.69 90.03 L33.91 90.60 L35.15 91.12 L36.41 91.59 L37.70 92.01 L39.01 92.39 L40.34 92.71 L41.69 92.98 L43.05 93.20 L44.42 93.36 L45.81 93.47 L47.20 93.53 L48.60 93.53 L50.01 93.47 L51.42 93.36 L52.83 93.19 L54.23 92.97 L55.63 92.68 L57.03 92.35 L58.41 91.95 L59.79 91.50 L61.15 90.99 L62.49 90.43 L63.82 89.81 L65.13 89.14 L66.41 88.41 L67.67 87.63 L68.90 86.80 L70.10 85.92 L71.27 84.98 L72.41 84.00 L73.51 82.97 L74.57 81.89 L75.60 80.77 L76.58 79.60 L77.52 78.39 L78.41 77.14 L79.25 75.85 L80.05 74.53 L80.80 73.16 L81.49 71.77 L82.14 70.34 L82.72 68.89 L83.25 67.40 L83.73 65.89 L84.14 64.36 L84.50 62.81 L84.79 61.24 L85.02 59.65 L85.19 58.05 L85.30 56.44 L85.35 54.82 L85.33 53.19 L85.24 51.56 L85.09 49.93 L84.88 48.30 L84.60 46.68 L84.25 45.06 L83.84 43.45 L83.37 41.85 L82.83 40.27 L82.23 38.71 L81.56 37.16 L80.83 35.64 L80.04 34.14 L79.19 32.67 L78.27 31.23 L77.30 29.83 L76.27 28.45 L75.18 27.12 L74.04 25.83 L72.84 24.57 L71.18 23.03 L69.52 21.48 L67.86 19.94 L66.19 18.40 L64.53 16.85 L62.87 15.31 L61.21 13.77 L59.55 12.22 L57.88 10.68 L56.22 9.14 L54.56 7.59 L52.90 6.05 L51.76 7.20 L53.41 8.76 L55.06 10.31 L56.70 11.87 L58.35 13.43 L60.00 14.98 L61.65 16.54 L63.30 18.10 L64.95 19.66 L66.60 21.21 L68.25 22.77 L69.90 24.33 L71.55 25.88 L72.70 27.08 L73.80 28.32 L74.84 29.60 L75.83 30.91 L76.76 32.25 L77.64 33.63 L78.46 35.04 L79.22 36.47 L79.92 37.93 L80.57 39.40 L81.15 40.90 L81.66 42.42 L82.12 43.94 L82.52 45.48 L82.85 47.03 L83.12 48.59 L83.33 50.15 L83.48 51.71 L83.56 53.27 L83.58 54.82 L83.54 56.37 L83.44 57.92 L83.28 59.45 L83.07 60.97 L82.79 62.47 L82.45 63.96 L82.06 65.42 L81.61 66.87 L81.10 68.29 L80.54 69.68 L79.93 71.05 L79.27 72.39 L78.56 73.69 L77.80 74.96 L77.00 76.20 L76.14 77.39 L75.25 78.55 L74.31 79.67 L73.34 80.75 L72.32 81.78 L71.27 82.77 L70.19 83.71 L69.07 84.60 L67.93 85.45 L66.75 86.25 L65.55 87.00 L64.33 87.69 L63.08 88.34 L61.81 88.93 L60.53 89.47 L59.23 89.96 L57.92 90.40 L56.60 90.78 L55.27 91.10 L53.93 91.38 L52.59 91.59 L51.24 91.76 L49.90 91.87 L48.55 91.93 L47.22 91.93 L45.88 91.88 L44.56 91.78 L43.25 91.62 L41.95 91.42 L40.66 91.17 L39.39 90.86 L38.14 90.51 L36.91 90.11 L35.70 89.66 L34.52 89.17 L33.36 88.63 L32.23 88.05 L31.12 87.43 L30.05 86.77 L29.01 86.07 L28.00 85.33 L27.02 84.55 L26.08 83.74 L25.18 82.90 L24.32 82.03 L23.49 81.12 L22.71 80.19 L21.96 79.24 L21.26 78.26 L20.60 77.25 L19.99 76.23 L19.39 75.19 L18.84 74.14 L18.34 73.08 L17.87 71.99 L17.46 70.90 L17.09 69.79 L16.76 68.67 L16.48 67.55 L16.25 66.42 L16.06 65.28 L15.92 64.15 L15.82 63.01 L15.77 61.87 L15.77 60.74 L15.81 59.62 L15.89 58.50 L16.02 57.39 L16.19 56.29 L16.41 55.20 L16.67 54.12 L16.96 53.07 L17.30 52.03 L17.68 51.00 L18.10 50.00 L18.55 49.02 L19.05 48.06 L19.57 47.13 L20.14 46.22 L20.73 45.34 L21.36 44.49 L22.02 43.67 L22.70 42.88 L23.42 42.12 L24.16 41.39 L24.93 40.70 L25.72 40.04 L26.53 39.41 L27.36 38.82 L28.22 38.27 L29.09 37.76 L29.97 37.28 L30.87 36.84 L31.78 36.44 L32.70 36.07 L33.64 35.75 L34.58 35.47 L35.52 35.22 L36.47 35.01 L37.43 34.85 L38.38 34.72 L39.34 34.63 L40.29 34.58 L41.24 34.57 L42.18 34.59 L43.12 34.66 L44.04 34.76 L44.96 34.90 L45.87 35.07 L46.77 35.28 L47.65 35.53 Z\" fill=\"#ffffff\" fill-opacity=\"0.42\"/></svg>";
+function renderAtelier() {
+  if (!S.atelier) return;
+  $("#at-nom").textContent = S.atelier.nom;
+  $("#at-code").textContent = S.atelier.code_invitation;
+  $("#at-email").textContent = (S.user && S.user.email) || "";
+}
+
+function saveBlob(blob, name) {
+  const u = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = u; a.download = name;
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(u), 5000);
+}
+
+function renderLabels() {
+  const url = effectiveUrl();
+  const ms = sortedMachines();
+  const grid = $("#lbl-grid");
+  $("#lbl-dl").hidden = !S.dl || !url || !ms.length;
+  if (!allLoaded()) { grid.innerHTML = `<p class="hint">Chargement…</p>`; return; }
+  if (!ms.length) { grid.innerHTML = `<p class="hint">Ajoutez des machines pour générer leurs étiquettes.</p>`; return; }
+  if (!url) { grid.innerHTML = `<p class="hint">Renseignez l'adresse de l'appli ci-dessus pour générer les QR codes.</p>`; return; }
+  grid.innerHTML = ms.map(m => `<div class="label"><div data-qr="${esc(m.id)}"></div><div class="min0"><div class="l-brand">${LABEL_MARK}<span>COPO</span></div><div class="l-nm">${esc(m.nom)}</div><div class="l-sub">${esc(modelLine(m))}</div><div class="l-cta">Scannez pour signaler une panne ou valider un entretien</div></div></div>`).join("");
+  grid.querySelectorAll("[data-qr]").forEach(el => el.appendChild(qrCanvas(`${url}#${el.dataset.qr}`, 108)));
+}
+
+/* ---------- photos ---------- */
+function hydratePhotos() {
+  if (!S.db) return;
+  document.querySelectorAll("img[data-pid]:not([src])").forEach(img => {
+    const id = img.dataset.pid;
+    if (S.photos.has(id)) { img.src = S.photos.get(id); return; }
+    if (S.photoPending.has(id)) return;
+    S.photoPending.add(id);
+    S.db.doc("photos/" + id).get().then(snap => {
+      if (snap.exists && snap.data().data) {
+        S.photos.set(id, snap.data().data);
+        document.querySelectorAll(`img[data-pid="${CSS.escape(id)}"]`).forEach(i => { i.src = S.photos.get(id); });
+      }
+    }).catch(() => {}).finally(() => S.photoPending.delete(id));
+  });
+}
+async function compressPhoto(file) {
+  const url = URL.createObjectURL(file);
+  try {
+    const img = await new Promise((res, rej) => { const i = new Image(); i.onload = () => res(i); i.onerror = rej; i.src = url; });
+    let max = 1280, q = 0.74, out = "";
+    for (let k = 0; k < 6; k++) {
+      const s = Math.min(1, max / Math.max(img.naturalWidth, img.naturalHeight));
+      const c = document.createElement("canvas");
+      c.width = Math.max(1, Math.round(img.naturalWidth * s)); c.height = Math.max(1, Math.round(img.naturalHeight * s));
+      c.getContext("2d").drawImage(img, 0, 0, c.width, c.height);
+      out = c.toDataURL("image/jpeg", q);
+      if (out.length < 220000) return out;
+      max = Math.round(max * 0.8); q = Math.max(0.5, q - 0.06);
+    }
+    return out.length < 240000 ? out : null;
+  } finally { URL.revokeObjectURL(url); }
+}
+
+/* ---------- writes ---------- */
+async function write(fn, okMsg) {
+  if (!S.db) { toast("Impossible d'enregistrer : la base de données n'est pas disponible dans cette vue."); return false; }
+  try { await fn(); if (okMsg) toast(okMsg); return true; }
+  catch (e) {
+    const code = e && e.code;
+    if (code === "unavailable") {
+      await sleep(400 + Math.random() * 600);
+      try { await fn(); if (okMsg) toast(okMsg); return true; }
+      catch (e2) { toast("Le serveur ne répond pas. Réessayez dans un instant."); return false; }
+    }
+    if (code === "invalid_argument") toast("Enregistrement refusé : vous n'avez pas accès à cet atelier. Reconnectez-vous.");
+    else if (code === "quota_exceeded") toast("Espace de stockage plein. Supprimez d'anciennes machines ou photos.");
+    else if (code === "revoked") toast("Votre accès à l'appli a changé. Rechargez la page.");
+    else toast("Échec de l'enregistrement. Réessayez.");
+    return false;
+  }
+}
+async function busy(btn, task) {
+  if (btn) btn.disabled = true;
+  try { return await task(); } finally { if (btn) btn.disabled = false; }
+}
+
+/* ---------- navigation ---------- */
+function setHash(token) {
+  try { if (location.hash.slice(1) !== token) location.hash = token; } catch (e) {}
+}
+function go(view) {
+  if (view === "back") view = S.prev && S.prev !== "machine" ? S.prev : "tableau";
+  if (S.view !== "machine") S.prev = S.view;
+  S.view = view; S.mid = null;
+  setHash(view);
+  render();
+  window.scrollTo(0, 0);
+}
+function openMachine(mid) {
+  if (S.view !== "machine") S.prev = S.view;
+  S.view = "machine";
+  if (S.mid !== mid) S.filledFor = null;
+  S.mid = mid;
+  setHash(mid);
+  render();
+  window.scrollTo(0, 0);
+}
+function route() {
+  const h = decodeURIComponent(location.hash.slice(1));
+  if (h.startsWith("m-")) { if (S.mid !== h || S.view !== "machine") openMachine(h); }
+  else if (["tableau", "machines", "etiquettes", "atelier"].includes(h) && S.view !== h) { if (S.view !== "machine") S.prev = S.view; S.view = h; S.mid = null; render(); }
+}
+
+/* ---------- two-step confirm ---------- */
+function armed(btn, label) {
+  if (btn.dataset.armed) { delete btn.dataset.armed; btn.classList.remove("armed"); btn.textContent = btn.dataset.orig; return true; }
+  btn.dataset.orig = btn.textContent; btn.dataset.armed = "1"; btn.textContent = label; btn.classList.add("armed");
+  setTimeout(() => { if (btn.dataset.armed) { delete btn.dataset.armed; btn.textContent = btn.dataset.orig; btn.classList.remove("armed"); } }, 4000);
+  return false;
+}
+
+/* ---------- actions ---------- */
+async function markDone(tid, btn) {
+  const t = S.taches.find(x => x.id === tid); if (!t) return;
+  const iso = new Date().toISOString(), by = me(), iid = rid("i");
+  await busy(btn, () => write(async () => {
+    await S.db.doc("interventions/" + iid).set({ machineId: t.machineId, tacheId: t.id, label: t.label, date: iso, par: by });
+    await S.db.doc("taches/" + t.id).update({ lastDone: iso, lastBy: by });
+  }, `Entretien noté : ${t.label}`));
+}
+
+async function deleteDocs(list) {
+  for (const [col, id] of list) await S.db.doc(`${col}/${id}`).delete();
+}
+
+async function deleteMachine(m, btn) {
+  const list = [];
+  for (const t of S.taches.filter(x => x.machineId === m.id)) list.push(["taches", t.id]);
+  for (const p of S.pannes.filter(x => x.machineId === m.id)) { if (p.photoId) list.push(["photos", p.photoId]); list.push(["pannes", p.id]); }
+  for (const r of S.coolant.filter(x => x.machineId === m.id)) list.push(["coolant", r.id]);
+  for (const i of S.interventions.filter(x => x.machineId === m.id)) list.push(["interventions", i.id]);
+  list.push(["machines", m.id]);
+  const ok = await busy(btn, () => write(() => deleteDocs(list), `${m.nom} supprimée`));
+  if (ok) go("machines");
+}
+
+async function clearExamples(btn) {
+  const list = [];
+  for (const p of S.pannes) if (p.exemple && p.photoId) list.push(["photos", p.photoId]);
+  for (const c of ["taches", "pannes", "coolant", "interventions", "machines"]) for (const d of S[c]) if (d.exemple) list.push([c, d.id]);
+  if (!list.length) return;
+  toast("Suppression des exemples…");
+  const ok = await busy(btn, () => write(() => deleteDocs(list), "Exemples effacés. Ajoutez vos vraies machines."));
+  if (ok) go("machines");
+}
+
+function updateCalc() {
+  const b = parseFloat($("#c-brix").value), f = parseFloat($("#c-fact").value);
+  const el = $("#c-calc");
+  const m = machineById(S.mid);
+  if (!isFinite(b) || !isFinite(f)) { el.textContent = "Concentration calculée : –"; el.removeAttribute("data-tone"); return; }
+  const c = Math.round(b * f * 10) / 10;
+  const out = m && (c < m.concMin || c > m.concMax);
+  el.textContent = `Concentration calculée : ${fmtNum(c)} %${out ? (c < m.concMin ? " (sous la plage cible)" : " (au-dessus de la plage cible)") : ""}`;
+  if (out) el.dataset.tone = "warn"; else el.removeAttribute("data-tone");
+}
+
+function updatePlanCount() {
+  $("#a-plan-n").textContent = PLANS[$("#a-type").value].length;
+}
+
+const MARK = { chip: "M40.79 59.59 L40.81 59.75 L40.81 59.91 L40.80 60.07 L40.81 60.23 L40.81 60.39 L40.82 60.55 L40.84 60.72 L40.86 60.89 L40.89 61.06 L40.93 61.23 L40.98 61.40 L41.03 61.58 L41.09 61.75 L41.16 61.93 L41.23 62.10 L41.32 62.28 L41.41 62.45 L41.52 62.63 L41.63 62.80 L41.75 62.97 L41.88 63.14 L42.02 63.31 L42.17 63.47 L42.33 63.63 L42.50 63.79 L42.68 63.94 L42.86 64.08 L43.06 64.22 L43.26 64.36 L43.47 64.49 L43.69 64.61 L43.92 64.72 L44.16 64.83 L44.40 64.92 L44.66 65.01 L44.92 65.09 L45.18 65.16 L45.46 65.22 L45.74 65.26 L46.02 65.30 L46.31 65.33 L46.61 65.34 L46.90 65.34 L47.21 65.33 L47.51 65.31 L47.82 65.27 L48.13 65.22 L48.45 65.16 L48.76 65.08 L49.08 64.99 L49.39 64.89 L49.70 64.77 L50.02 64.64 L50.33 64.49 L50.64 64.33 L50.94 64.15 L51.24 63.96 L51.54 63.75 L51.83 63.53 L52.11 63.30 L52.39 63.05 L52.66 62.79 L52.92 62.51 L53.17 62.22 L53.42 61.92 L53.65 61.61 L53.88 61.28 L54.09 60.94 L54.29 60.58 L54.48 60.22 L54.65 59.85 L54.81 59.46 L54.96 59.06 L55.09 58.66 L55.21 58.24 L55.31 57.82 L55.40 57.39 L55.46 56.95 L55.51 56.51 L55.55 56.06 L55.56 55.60 L55.56 55.14 L55.54 54.68 L55.49 54.21 L55.43 53.75 L55.35 53.28 L55.25 52.81 L55.13 52.34 L55.00 51.87 L54.84 51.40 L54.66 50.94 L54.46 50.47 L54.24 50.02 L54.00 49.57 L53.74 49.12 L53.46 48.69 L53.16 48.26 L52.84 47.84 L52.50 47.43 L52.14 47.03 L51.76 46.64 L51.37 46.27 L50.96 45.91 L50.53 45.56 L50.08 45.23 L49.62 44.91 L49.14 44.61 L48.64 44.33 L48.13 44.06 L47.61 43.81 L47.08 43.59 L46.53 43.38 L45.96 43.19 L45.39 43.03 L44.81 42.89 L44.22 42.77 L43.62 42.67 L43.01 42.59 L42.40 42.54 L41.77 42.52 L41.15 42.52 L40.52 42.54 L39.89 42.59 L39.25 42.67 L38.62 42.77 L37.99 42.89 L37.35 43.05 L36.72 43.23 L36.10 43.43 L35.47 43.67 L34.86 43.92 L34.25 44.21 L33.65 44.52 L33.05 44.85 L32.47 45.22 L31.90 45.60 L31.34 46.02 L30.80 46.45 L30.27 46.91 L29.75 47.40 L29.25 47.90 L28.77 48.43 L28.31 48.99 L27.87 49.56 L27.44 50.15 L27.04 50.77 L26.67 51.40 L26.31 52.05 L25.98 52.72 L25.68 53.41 L25.40 54.11 L25.14 54.82 L24.92 55.55 L24.72 56.29 L24.55 57.05 L24.41 57.81 L24.30 58.58 L24.22 59.37 L24.17 60.15 L24.15 60.95 L24.17 61.74 L24.21 62.55 L24.29 63.35 L24.40 64.15 L24.54 64.96 L24.72 65.76 L24.92 66.55 L25.16 67.35 L25.44 68.13 L25.74 68.91 L26.08 69.68 L26.45 70.45 L26.85 71.19 L27.29 71.93 L27.75 72.65 L28.25 73.36 L28.77 74.05 L29.33 74.72 L29.91 75.38 L30.52 76.01 L31.16 76.62 L31.83 77.21 L32.52 77.77 L33.24 78.31 L33.99 78.83 L34.75 79.31 L35.54 79.77 L36.35 80.19 L37.18 80.59 L38.03 80.96 L38.90 81.29 L39.78 81.59 L40.68 81.86 L41.59 82.09 L42.52 82.28 L43.46 82.44 L44.40 82.57 L45.36 82.65 L46.32 82.70 L47.29 82.71 L48.26 82.69 L49.24 82.62 L50.21 82.51 L51.19 82.37 L52.16 82.19 L53.13 81.96 L54.10 81.70 L55.05 81.40 L56.00 81.06 L56.94 80.68 L57.87 80.26 L58.78 79.81 L59.68 79.32 L60.56 78.78 L61.43 78.22 L62.27 77.61 L63.10 76.97 L63.90 76.30 L64.68 75.59 L65.43 74.85 L66.15 74.08 L66.85 73.27 L67.52 72.44 L68.16 71.57 L68.76 70.68 L69.33 69.76 L69.87 68.81 L70.37 67.84 L70.83 66.85 L71.26 65.84 L71.65 64.80 L72.00 63.75 L72.30 62.68 L72.57 61.59 L72.80 60.49 L72.98 59.38 L73.11 58.26 L73.21 57.13 L73.26 55.99 L73.26 54.84 L73.22 53.70 L73.14 52.55 L73.00 51.40 L72.83 50.25 L72.60 49.10 L72.33 47.96 L72.02 46.83 L71.66 45.71 L71.25 44.60 L70.80 43.50 L70.30 42.41 L69.76 41.34 L69.18 40.29 L68.55 39.26 L67.88 38.25 L67.17 37.27 L66.41 36.31 L65.62 35.38 L64.79 34.48 L63.92 33.60 L62.35 31.96 L60.79 30.31 L59.23 28.67 L57.67 27.02 L56.10 25.38 L54.54 23.74 L52.98 22.09 L51.42 20.45 L49.85 18.80 L48.29 17.16 L46.73 15.51 L40.73 9.48 L53.93 5.00 L55.59 6.54 L57.26 8.09 L58.92 9.63 L60.58 11.17 L62.24 12.72 L63.91 14.26 L65.57 15.81 L67.23 17.35 L68.89 18.89 L70.55 20.44 L72.22 21.98 L73.88 23.52 L75.12 24.82 L76.30 26.16 L77.42 27.54 L78.49 28.95 L79.50 30.41 L80.44 31.90 L81.32 33.42 L82.14 34.97 L82.90 36.54 L83.59 38.14 L84.21 39.76 L84.77 41.39 L85.26 43.05 L85.69 44.71 L86.04 46.39 L86.33 48.07 L86.56 49.75 L86.71 51.44 L86.80 53.13 L86.82 54.82 L86.77 56.49 L86.66 58.16 L86.49 59.82 L86.25 61.47 L85.94 63.09 L85.57 64.70 L85.14 66.29 L84.65 67.86 L84.11 69.40 L83.50 70.91 L82.83 72.39 L82.11 73.83 L81.34 75.25 L80.51 76.62 L79.63 77.96 L78.71 79.26 L77.73 80.52 L76.71 81.73 L75.65 82.90 L74.55 84.01 L73.41 85.09 L72.23 86.11 L71.01 87.08 L69.76 88.00 L68.48 88.86 L67.18 89.67 L65.84 90.43 L64.48 91.13 L63.11 91.77 L61.71 92.36 L60.29 92.89 L58.86 93.35 L57.42 93.77 L55.97 94.12 L54.51 94.41 L53.05 94.65 L51.58 94.82 L50.11 94.94 L48.65 95.00 L47.19 95.00 L45.74 94.94 L44.29 94.83 L42.86 94.66 L41.44 94.43 L40.04 94.15 L38.65 93.82 L37.29 93.43 L35.94 92.99 L34.62 92.49 L33.33 91.95 L32.06 91.36 L30.82 90.73 L29.61 90.04 L28.44 89.32 L27.30 88.54 L26.20 87.73 L25.13 86.88 L24.11 85.99 L23.12 85.07 L22.17 84.11 L21.27 83.11 L20.41 82.09 L19.60 81.04 L18.83 79.96 L18.11 78.85 L17.44 77.73 L16.81 76.58 L16.23 75.41 L15.70 74.23 L15.23 73.03 L14.80 71.82 L14.42 70.60 L14.09 69.37 L13.81 68.13 L13.59 66.89 L13.41 65.64 L13.28 64.40 L13.21 63.15 L13.18 61.91 L13.20 60.68 L13.27 59.45 L13.39 58.24 L13.56 57.03 L13.78 55.84 L14.04 54.66 L14.34 53.50 L14.69 52.36 L15.09 51.23 L15.52 50.13 L16.00 49.06 L16.52 48.01 L17.07 46.98 L17.67 45.98 L18.30 45.01 L18.96 44.08 L19.66 43.17 L20.39 42.30 L21.16 41.46 L21.95 40.66 L22.76 39.89 L23.61 39.16 L24.48 38.47 L25.37 37.81 L26.28 37.20 L27.21 36.62 L28.15 36.09 L29.12 35.60 L30.09 35.15 L31.08 34.74 L32.08 34.37 L33.09 34.04 L34.11 33.76 L35.12 33.52 L36.15 33.32 L37.17 33.16 L38.20 33.05 L39.22 32.97 L40.24 32.94 L41.25 32.95 L42.26 33.00 L43.26 33.09 L44.25 33.22 L45.23 33.39 L46.19 33.59 L47.14 33.83 L48.07 34.11 L48.99 34.43 L49.89 34.78 L50.76 35.16 L51.62 35.58 L52.45 36.03 L53.26 36.50 L54.05 37.01 L54.81 37.55 L55.54 38.11 L56.24 38.70 L56.92 39.31 L57.57 39.95 L58.18 40.60 L58.77 41.28 L59.32 41.98 L59.85 42.69 L60.34 43.42 L60.79 44.16 L61.22 44.92 L61.61 45.69 L61.96 46.46 L62.28 47.25 L62.57 48.05 L62.82 48.85 L63.04 49.65 L63.23 50.46 L63.38 51.26 L63.49 52.07 L63.57 52.88 L63.62 53.68 L63.64 54.48 L63.62 55.27 L63.57 56.06 L63.49 56.84 L63.38 57.61 L63.24 58.36 L63.07 59.11 L62.86 59.84 L62.63 60.56 L62.38 61.26 L62.09 61.95 L61.78 62.62 L61.45 63.27 L61.09 63.90 L60.71 64.51 L60.31 65.10 L59.88 65.67 L59.44 66.22 L58.98 66.74 L58.50 67.24 L58.00 67.71 L57.49 68.16 L56.97 68.59 L56.43 68.98 L55.88 69.36 L55.32 69.70 L54.75 70.02 L54.17 70.32 L53.59 70.58 L53.00 70.82 L52.40 71.03 L51.81 71.22 L51.21 71.37 L50.61 71.50 L50.01 71.61 L49.41 71.69 L48.82 71.74 L48.23 71.76 L47.64 71.77 L47.06 71.74 L46.49 71.69 L45.93 71.62 L45.37 71.52 L44.83 71.40 L44.29 71.26 L43.77 71.10 L43.26 70.92 L42.77 70.71 L42.29 70.49 L41.82 70.25 L41.37 69.99 L40.94 69.72 L40.52 69.43 L40.13 69.12 L39.75 68.80 L39.38 68.47 L39.04 68.12 L38.72 67.76 L38.42 67.40 L38.14 67.02 L37.88 66.64 L37.64 66.25 L37.42 65.85 L37.22 65.45 L37.04 65.05 L36.89 64.64 L36.75 64.23 L36.64 63.82 L36.55 63.41 L36.47 63.00 L36.42 62.60 L36.39 62.19 L36.38 61.80 L36.39 61.40 L36.42 61.02 L36.47 60.64 L36.54 60.27 L36.62 59.91 L36.72 59.55 L36.85 59.22 L36.98 58.89 L37.14 58.58 L37.32 58.28 L37.53 58.01 Z", hl: "M47.65 35.53 L46.77 35.26 L45.88 35.03 L44.97 34.84 L44.05 34.68 L43.13 34.56 L42.19 34.47 L41.24 34.42 L40.28 34.41 L39.32 34.44 L38.36 34.51 L37.39 34.62 L36.43 34.76 L35.46 34.95 L34.50 35.18 L33.54 35.45 L32.59 35.75 L31.64 36.10 L30.71 36.48 L29.78 36.91 L28.87 37.38 L27.98 37.88 L27.10 38.42 L26.23 39.00 L25.39 39.62 L24.57 40.28 L23.77 40.97 L22.99 41.69 L22.24 42.46 L21.52 43.25 L20.83 44.08 L20.16 44.94 L19.53 45.82 L18.93 46.74 L18.37 47.69 L17.84 48.66 L17.34 49.66 L16.89 50.68 L16.48 51.73 L16.10 52.80 L15.77 53.88 L15.47 54.99 L15.23 56.11 L15.02 57.24 L14.86 58.39 L14.75 59.55 L14.68 60.72 L14.65 61.89 L14.68 63.07 L14.75 64.26 L14.87 65.44 L15.04 66.63 L15.25 67.81 L15.52 69.00 L15.83 70.17 L16.19 71.34 L16.60 72.49 L17.05 73.64 L17.56 74.77 L18.11 75.88 L18.71 76.98 L19.35 78.06 L20.04 79.11 L20.77 80.15 L21.55 81.15 L22.37 82.13 L23.23 83.08 L24.14 84.00 L25.08 84.89 L26.06 85.74 L27.08 86.55 L28.14 87.33 L29.23 88.07 L30.35 88.77 L31.51 89.42 L32.69 90.03 L33.91 90.60 L35.15 91.12 L36.41 91.59 L37.70 92.01 L39.01 92.39 L40.34 92.71 L41.69 92.98 L43.05 93.20 L44.42 93.36 L45.81 93.47 L47.20 93.53 L48.60 93.53 L50.01 93.47 L51.42 93.36 L52.83 93.19 L54.23 92.97 L55.63 92.68 L57.03 92.35 L58.41 91.95 L59.79 91.50 L61.15 90.99 L62.49 90.43 L63.82 89.81 L65.13 89.14 L66.41 88.41 L67.67 87.63 L68.90 86.80 L70.10 85.92 L71.27 84.98 L72.41 84.00 L73.51 82.97 L74.57 81.89 L75.60 80.77 L76.58 79.60 L77.52 78.39 L78.41 77.14 L79.25 75.85 L80.05 74.53 L80.80 73.16 L81.49 71.77 L82.14 70.34 L82.72 68.89 L83.25 67.40 L83.73 65.89 L84.14 64.36 L84.50 62.81 L84.79 61.24 L85.02 59.65 L85.19 58.05 L85.30 56.44 L85.35 54.82 L85.33 53.19 L85.24 51.56 L85.09 49.93 L84.88 48.30 L84.60 46.68 L84.25 45.06 L83.84 43.45 L83.37 41.85 L82.83 40.27 L82.23 38.71 L81.56 37.16 L80.83 35.64 L80.04 34.14 L79.19 32.67 L78.27 31.23 L77.30 29.83 L76.27 28.45 L75.18 27.12 L74.04 25.83 L72.84 24.57 L71.18 23.03 L69.52 21.48 L67.86 19.94 L66.19 18.40 L64.53 16.85 L62.87 15.31 L61.21 13.77 L59.55 12.22 L57.88 10.68 L56.22 9.14 L54.56 7.59 L52.90 6.05 L51.76 7.20 L53.41 8.76 L55.06 10.31 L56.70 11.87 L58.35 13.43 L60.00 14.98 L61.65 16.54 L63.30 18.10 L64.95 19.66 L66.60 21.21 L68.25 22.77 L69.90 24.33 L71.55 25.88 L72.70 27.08 L73.80 28.32 L74.84 29.60 L75.83 30.91 L76.76 32.25 L77.64 33.63 L78.46 35.04 L79.22 36.47 L79.92 37.93 L80.57 39.40 L81.15 40.90 L81.66 42.42 L82.12 43.94 L82.52 45.48 L82.85 47.03 L83.12 48.59 L83.33 50.15 L83.48 51.71 L83.56 53.27 L83.58 54.82 L83.54 56.37 L83.44 57.92 L83.28 59.45 L83.07 60.97 L82.79 62.47 L82.45 63.96 L82.06 65.42 L81.61 66.87 L81.10 68.29 L80.54 69.68 L79.93 71.05 L79.27 72.39 L78.56 73.69 L77.80 74.96 L77.00 76.20 L76.14 77.39 L75.25 78.55 L74.31 79.67 L73.34 80.75 L72.32 81.78 L71.27 82.77 L70.19 83.71 L69.07 84.60 L67.93 85.45 L66.75 86.25 L65.55 87.00 L64.33 87.69 L63.08 88.34 L61.81 88.93 L60.53 89.47 L59.23 89.96 L57.92 90.40 L56.60 90.78 L55.27 91.10 L53.93 91.38 L52.59 91.59 L51.24 91.76 L49.90 91.87 L48.55 91.93 L47.22 91.93 L45.88 91.88 L44.56 91.78 L43.25 91.62 L41.95 91.42 L40.66 91.17 L39.39 90.86 L38.14 90.51 L36.91 90.11 L35.70 89.66 L34.52 89.17 L33.36 88.63 L32.23 88.05 L31.12 87.43 L30.05 86.77 L29.01 86.07 L28.00 85.33 L27.02 84.55 L26.08 83.74 L25.18 82.90 L24.32 82.03 L23.49 81.12 L22.71 80.19 L21.96 79.24 L21.26 78.26 L20.60 77.25 L19.99 76.23 L19.39 75.19 L18.84 74.14 L18.34 73.08 L17.87 71.99 L17.46 70.90 L17.09 69.79 L16.76 68.67 L16.48 67.55 L16.25 66.42 L16.06 65.28 L15.92 64.15 L15.82 63.01 L15.77 61.87 L15.77 60.74 L15.81 59.62 L15.89 58.50 L16.02 57.39 L16.19 56.29 L16.41 55.20 L16.67 54.12 L16.96 53.07 L17.30 52.03 L17.68 51.00 L18.10 50.00 L18.55 49.02 L19.05 48.06 L19.57 47.13 L20.14 46.22 L20.73 45.34 L21.36 44.49 L22.02 43.67 L22.70 42.88 L23.42 42.12 L24.16 41.39 L24.93 40.70 L25.72 40.04 L26.53 39.41 L27.36 38.82 L28.22 38.27 L29.09 37.76 L29.97 37.28 L30.87 36.84 L31.78 36.44 L32.70 36.07 L33.64 35.75 L34.58 35.47 L35.52 35.22 L36.47 35.01 L37.43 34.85 L38.38 34.72 L39.34 34.63 L40.29 34.58 L41.24 34.57 L42.18 34.59 L43.12 34.66 L44.04 34.76 L44.96 34.90 L45.87 35.07 L46.77 35.28 L47.65 35.53 Z", cx: 44.22, cy: 58.18, r: 45.35, stops: [[0.0, "#f6d98a"], [0.16, "#e8ac45"], [0.36, "#c06a2b"], [0.52, "#8a4a86"], [0.68, "#4a68b4"], [0.86, "#2a63a8"], [1.0, "#1d4f86"]] };
+function drawMark(ctx, x, y, size) {
+  ctx.save();
+  ctx.translate(x, y); ctx.scale(size / 100, size / 100);
+  const g = ctx.createRadialGradient(MARK.cx, MARK.cy, 0, MARK.cx, MARK.cy, MARK.r);
+  MARK.stops.forEach(([o, c]) => g.addColorStop(o, c));
+  ctx.fillStyle = g; ctx.fill(new Path2D(MARK.chip));
+  ctx.fillStyle = "rgba(255,255,255,0.42)"; ctx.fill(new Path2D(MARK.hl));
+  ctx.restore();
+}
+
+async function buildSheetPng(ms, url) {
+  try { await document.fonts.load('700 52px "Barlow Condensed"'); await document.fonts.load('600 22px "Barlow"'); } catch (e) {}
+  const W = 1240, M = 50, G = 30, cols = 2, lw = (W - 2 * M - G) / cols, lh = 300;
+  const rows = Math.ceil(ms.length / cols);
+  const H = M * 2 + rows * lh + (rows - 1) * G;
+  const c = document.createElement("canvas"); c.width = W; c.height = H;
+  const x = c.getContext("2d");
+  x.fillStyle = "#ffffff"; x.fillRect(0, 0, W, H);
+  const fit = (txt, maxW) => { let t = txt; while (t.length > 1 && x.measureText(t).width > maxW) t = t.slice(0, -2) + "…"; return t; };
+  const wrap = (txt, tx, ty, maxW, lineH, maxLines) => {
+    const lines = []; let line = "";
+    for (const w of String(txt).split(/\s+/)) {
+      const test = line ? line + " " + w : w;
+      if (x.measureText(test).width > maxW && line) { lines.push(line); line = w; } else line = test;
+    }
+    if (line) lines.push(line);
+    lines.slice(0, maxLines).forEach((l, i) => x.fillText(fit(l, maxW), tx, ty + i * lineH));
+  };
+  ms.forEach((m, i) => {
+    const cx = M + (i % cols) * (lw + G), cy = M + Math.floor(i / cols) * (lh + G);
+    x.setLineDash([10, 7]); x.strokeStyle = "#a7b0b5"; x.lineWidth = 2; x.strokeRect(cx, cy, lw, lh); x.setLineDash([]);
+    drawQr(x, `${url}#${m.id}`, cx + 22, cy + 30, 240);
+    const tx = cx + 282, tw = lw - 300;
+    x.textBaseline = "alphabetic";
+    x.fillStyle = "#5a6873"; x.font = '600 20px "Barlow Condensed", "Arial Narrow", sans-serif';
+    drawMark(x, tx, cy + 34, 36);
+    x.fillText("COPO · MAINTENANCE", tx + 46, cy + 62);
+    x.fillStyle = "#121212"; x.font = '700 54px "Barlow Condensed", "Arial Narrow", sans-serif';
+    x.fillText(fit(String(m.nom), tw), tx, cy + 120);
+    x.fillStyle = "#333333"; x.font = '500 22px "Barlow", Arial, sans-serif';
+    x.fillText(fit(modelLine(m), tw), tx, cy + 156);
+    if (m.emplacement) x.fillText(fit(String(m.emplacement), tw), tx, cy + 184);
+    x.fillStyle = "#b3302a"; x.font = '600 21px "Barlow", Arial, sans-serif';
+    wrap("Scannez pour signaler une panne ou valider un entretien", tx, cy + 236, tw, 26, 2);
+  });
+  return new Promise(r => c.toBlob(r, "image/png"));
+}
+
+/* ---------- events ---------- */
+document.addEventListener("click", async e => {
+  const goBtn = e.target.closest("[data-go]");
+  if (goBtn) { go(goBtn.dataset.go); return; }
+  const open = e.target.closest("[data-open]");
+  if (open) { openMachine(open.dataset.open); return; }
+  const a = e.target.closest("[data-act]");
+  if (!a) return;
+  const act = a.dataset.act;
+  const m = machineById(S.mid);
+  if (act === "signal") {
+    const f = $("#f-panne"); f.hidden = !f.hidden;
+    if (!f.hidden) { f.scrollIntoView({ block: "start", behavior: "smooth" }); setTimeout(() => $("#p-desc").focus({ preventScroll: true }), 250); }
+  } else if (act === "signal-cancel") {
+    $("#f-panne").reset(); $("#f-panne").hidden = true; $("#p-preview").hidden = true;
+  } else if (act === "resolve") {
+    const p = S.pannes.find(x => x.id === a.dataset.id); if (!p) return;
+    S.resolving = p.id;
+    $("#r-for").textContent = `Clôture de : ${p.description}`;
+    $("#f-resolve").hidden = false; $("#r-text").focus();
+  } else if (act === "resolve-cancel") {
+    S.resolving = null; $("#f-resolve").reset(); $("#f-resolve").hidden = true;
+  } else if (act === "done") {
+    markDone(a.dataset.id, a);
+  } else if (act === "task-del") {
+    if (!armed(a, "Confirmer")) return;
+    const t = S.taches.find(x => x.id === a.dataset.id); if (!t) return;
+    busy(a, () => write(() => S.db.doc("taches/" + t.id).delete(), "Tâche retirée"));
+  } else if (act === "m-del") {
+    if (!m || !armed(a, "Confirmer la suppression")) return;
+    deleteMachine(m, a);
+  } else if (act === "clear-examples") {
+    if (!armed(a, "Confirmer l'effacement")) return;
+    clearExamples(a);
+  } else if (act === "add-first") {
+    go("machines"); $("#add-panel").open = true; $("#a-nom").focus();
+  } else if (act === "lb") {
+    const src = S.photos.get(a.dataset.photo); if (!src) return;
+    $("#lb-img").src = src; $("#lightbox").hidden = false;
+  } else if (act === "close-lb") {
+    $("#lightbox").hidden = true; $("#lb-img").removeAttribute("src");
+  } else if (act === "copy-link") {
+    const txt = `${effectiveUrl()}#${S.mid}`;
+    try { await navigator.clipboard.writeText(txt); toast("Lien copié"); }
+    catch (err) { const u = $("#ms-qr .url"); if (u) { const r = document.createRange(); r.selectNodeContents(u); const s = getSelection(); s.removeAllRanges(); s.addRange(r); } toast("Copiez le lien sélectionné"); }
+  } else if (act === "signup") {
+    await signUp(a);
+  } else if (act === "logout") {
+    if (SB) await SB.auth.signOut();
+  } else if (act === "copy-code") {
+    const code = S.atelier ? S.atelier.code_invitation : "";
+    try { await navigator.clipboard.writeText(code); toast("Code copié"); }
+    catch (err) { const el = $("#at-code"); const r = document.createRange(); r.selectNodeContents(el); const sel = getSelection(); sel.removeAllRanges(); sel.addRange(r); toast("Copiez le code sélectionné"); }
+  } else if (act === "lbl-dl") {
+    const url = effectiveUrl(); const ms = sortedMachines();
+    await busy(a, async () => {
+      const blob = await buildSheetPng(ms, url);
+      if (!blob) { toast("Impossible de générer l'image."); return; }
+      saveBlob(blob, "etiquettes-qr-copo.png");
+    });
+  }
+});
+
+$("#lightbox").addEventListener("click", e => { if (e.target.id === "lightbox") { $("#lightbox").hidden = true; } });
+document.addEventListener("keydown", e => { if (e.key === "Escape" && !$("#lightbox").hidden) $("#lightbox").hidden = true; });
+$("#add-panel").addEventListener("toggle", () => { $("#add-panel").dataset.touched = "1"; });
+$("#a-type").addEventListener("change", updatePlanCount);
+$("#c-brix").addEventListener("input", updateCalc);
+$("#c-fact").addEventListener("input", updateCalc);
+$("#p-photo").addEventListener("change", e => {
+  const f = e.target.files && e.target.files[0], img = $("#p-preview");
+  if (!f) { img.hidden = true; img.removeAttribute("src"); return; }
+  const u = URL.createObjectURL(f);
+  img.onload = () => URL.revokeObjectURL(u);
+  img.src = u; img.hidden = false;
+});
+(() => {
+  const inp = $("#me-name");
+  try { inp.value = localStorage.getItem("copeau-nom") || ""; } catch (e) {}
+  inp.addEventListener("change", () => { try { localStorage.setItem("copeau-nom", inp.value.trim()); } catch (e) {} });
+})();
+
+document.addEventListener("submit", async e => {
+  e.preventDefault();
+  const f = e.target, btn = f.querySelector('[type="submit"]');
+  const m = machineById(S.mid);
+
+  if (f.id === "f-add") {
+    const nom = $("#a-nom").value.trim(); if (!nom) return;
+    const type = $("#a-type").value, iso = new Date().toISOString(), mid = rid("m");
+    const machine = { nom, type, marque: $("#a-marque").value.trim(), modele: $("#a-modele").value.trim(), emplacement: $("#a-empl").value.trim(),
+      liquide: $("#a-liq").checked, concMin: 5, concMax: 8, phMin: 8.5, facteur: 1, createdAt: iso };
+    const plan = $("#a-plan").checked ? PLANS[type].map(([label, freq]) => ({ id: rid("t"), label, freq })) : [];
+    const ok = await busy(btn, () => write(async () => {
+      await S.db.doc("machines/" + mid).set(machine);
+      for (const t of plan) await S.db.doc("taches/" + t.id).set({ machineId: mid, label: t.label, freq: t.freq, lastDone: null, lastBy: null, createdAt: iso });
+    }, `${nom} ajoutée${plan.length ? ` avec ${plan.length} tâches d'entretien` : ""}`));
+    if (ok) { f.reset(); updatePlanCount(); openMachine(mid); }
+  }
+
+  else if (f.id === "f-panne" && m) {
+    const desc = $("#p-desc").value.trim(); if (!desc) return;
+    const grav = f.querySelector('input[name="grav"]:checked').value;
+    const file = $("#p-photo").files && $("#p-photo").files[0];
+    const iso = new Date().toISOString(), by = me(), pid = rid("p");
+    await busy(btn, async () => {
+      let photoId = null, data = null;
+      if (file) {
+        data = await compressPhoto(file).catch(() => null);
+        if (!data) { toast("Cette photo n'a pas pu être lue. Essayez une photo au format JPEG ou PNG."); return; }
+        photoId = rid("ph");
+      }
+      const ok = await write(async () => {
+        if (photoId) await S.db.doc("photos/" + photoId).set({ data, machineId: m.id, createdAt: iso });
+        await S.db.doc("pannes/" + pid).set({ machineId: m.id, gravite: grav, alarme: $("#p-alarme").value.trim(), description: desc, photoId, par: by, createdAt: iso, statut: "ouverte", resolvedAt: null, resolution: null, resolvedBy: null });
+      }, "Panne signalée");
+      if (ok) {
+        if (photoId) S.photos.set(photoId, data);
+        f.reset(); f.hidden = true; $("#p-preview").hidden = true;
+        window.scrollTo({ top: 0, behavior: "smooth" });
+      }
+    });
+  }
+
+  else if (f.id === "f-resolve" && S.resolving) {
+    const text = $("#r-text").value.trim(); if (!text) return;
+    const id = S.resolving, iso = new Date().toISOString(), by = me();
+    const ok = await busy(btn, () => write(() => S.db.doc("pannes/" + id).update({ statut: "resolue", resolvedAt: iso, resolution: text, resolvedBy: by }), "Panne clôturée"));
+    if (ok) { S.resolving = null; f.reset(); f.hidden = true; }
+  }
+
+  else if (f.id === "f-task" && m) {
+    const label = $("#t-label").value.trim(); if (!label) return;
+    const freq = parseInt($("#t-freq").value, 10), tid = rid("t");
+    const ok = await busy(btn, () => write(() => S.db.doc("taches/" + tid).set({ machineId: m.id, label, freq, lastDone: null, lastBy: null, createdAt: new Date().toISOString() }), "Tâche ajoutée"));
+    if (ok) { f.reset(); }
+  }
+
+  else if (f.id === "f-cool" && m) {
+    const brix = parseFloat($("#c-brix").value), fact = parseFloat($("#c-fact").value);
+    if (!isFinite(brix) || !isFinite(fact)) return;
+    const phV = parseFloat($("#c-ph").value), appV = parseFloat($("#c-app").value);
+    const vid = $("#c-vid").checked;
+    const iso = new Date().toISOString(), by = me(), cid = rid("c");
+    const conc = Math.round(brix * fact * 10) / 10;
+    const bacTask = vid ? S.taches.find(t => t.machineId === m.id && /bac de liquide/i.test(t.label)) : null;
+    const iid = rid("i");
+    const ok = await busy(btn, () => write(async () => {
+      await S.db.doc("coolant/" + cid).set({ machineId: m.id, date: iso, brix, facteur: fact, conc, ph: isFinite(phV) ? phV : null, appoint: isFinite(appV) ? appV : null, vidange: vid, par: by });
+      if (fact !== m.facteur) await S.db.doc("machines/" + m.id).update({ facteur: fact });
+      if (bacTask) {
+        await S.db.doc("interventions/" + iid).set({ machineId: m.id, tacheId: bacTask.id, label: bacTask.label, date: iso, par: by });
+        await S.db.doc("taches/" + bacTask.id).update({ lastDone: iso, lastBy: by });
+      }
+    }, `Relevé enregistré : ${fmtNum(conc)} %`));
+    if (ok) { f.reset(); $("#c-fact").value = fact; updateCalc(); }
+  }
+
+  else if (f.id === "f-set" && m) {
+    const min = parseFloat($("#s-min").value), max = parseFloat($("#s-max").value), ph = parseFloat($("#s-ph").value), fact = parseFloat($("#s-fact").value);
+    if (![min, max, ph, fact].every(isFinite)) return;
+    if (min >= max) { toast("La concentration mini doit être inférieure à la maxi."); return; }
+    const ok = await busy(btn, () => write(() => S.db.doc("machines/" + m.id).update({ concMin: min, concMax: max, phMin: ph, facteur: fact, liquide: $("#s-liq").checked }), "Réglages enregistrés"));
+    if (ok) { $("#c-fact").value = fact; updateCalc(); }
+  }
+
+  else if (f.id === "f-login") {
+    if (!SB) return;
+    const email = $("#l-email").value.trim(), password = $("#l-pass").value;
+    $("#l-msg").textContent = "";
+    await busy(btn, async () => {
+      const { error } = await SB.auth.signInWithPassword({ email, password });
+      if (error) $("#l-msg").textContent = /invalid login/i.test(error.message) ? "E-mail ou mot de passe incorrect."
+        : /not confirmed/i.test(error.message) ? "Confirmez d'abord votre adresse avec le lien reçu par e-mail."
+        : "Connexion impossible : " + error.message;
+    });
+  }
+
+  else if (f.id === "f-create") {
+    if (!SB) return;
+    const nom = $("#o-nom").value.trim(); if (!nom) return;
+    await busy(btn, async () => {
+      const { data, error } = await SB.rpc("creer_atelier", { p_nom: nom });
+      if (error) { toast("Création impossible : " + error.message); return; }
+      f.reset(); enterAtelier(data);
+    });
+  }
+
+  else if (f.id === "f-join") {
+    if (!SB) return;
+    const code = $("#o-code").value.trim().toUpperCase(); if (!code) return;
+    await busy(btn, async () => {
+      const { data, error } = await SB.rpc("rejoindre_atelier", { p_code: code });
+      if (error) { toast(/invalide/i.test(error.message) ? "Code d'invitation introuvable. Vérifiez-le auprès de votre collègue." : "Impossible de rejoindre : " + error.message); return; }
+      f.reset(); enterAtelier(data);
+    });
+  }
+
+  else if (f.id === "f-url") {
+    const v = $("#u-url").value.trim().replace(/#.*$/, "");
+    if (v && !/^https:\/\//.test(v)) { toast("L'adresse doit commencer par https://"); return; }
+    await busy(btn, () => write(() => S.db.doc("config/app").set({ url: v }), "Adresse enregistrée"));
+  }
+});
+
+window.addEventListener("hashchange", route);
+setInterval(() => { if (S.view === "tableau" || S.view === "machine") scheduleRender(); }, 60000);
+
+/* ---------- boot ---------- */
+updatePlanCount();
+ensureQrLib();
+route();
+render();
+
+/* ---------- Supabase ---------- */
+const CFG = window.COPO_CONFIG || {};
+const CONFIGURED = CFG.supabaseUrl && CFG.supabaseAnonKey && !/COLLE_ICI/.test(CFG.supabaseUrl + CFG.supabaseAnonKey);
+const SB = (window.supabase && CONFIGURED) ? window.supabase.createClient(CFG.supabaseUrl, CFG.supabaseAnonKey) : null;
+
+function normErr(e) {
+  const msg = (e && e.message) || String(e || "");
+  if (e && (e.code === "42501" || /row-level security|permission denied/i.test(msg))) return { code: "invalid_argument", message: msg };
+  if (/fetch|network|timeout|Failed to/i.test(msg)) return { code: "unavailable", message: msg };
+  return { code: "unknown", message: msg };
+}
+
+// Same interface as before (collection().onSnapshot, doc().get/set/update/delete), backed by the "docs" table.
+function makeDb(sb, atelierId) {
+  const listeners = {}, cache = {}, timers = {};
+  const emit = col => {
+    const docs = [...(cache[col] || new Map())].map(([id, d]) => ({ id, exists: true, data: () => d }));
+    (listeners[col] || []).forEach(fn => fn({ docs, size: docs.length, empty: !docs.length }));
+  };
+  const load = async col => {
+    const { data, error } = await sb.from("docs").select("id,data").eq("atelier_id", atelierId).eq("collection", col).limit(10000);
+    if (error) throw normErr(error);
+    cache[col] = new Map(data.map(r => [r.id, r.data]));
+    emit(col);
+  };
+  const put = async (col, id, value) => {
+    const { error } = await sb.from("docs").upsert({ atelier_id: atelierId, collection: col, id, data: value, maj_le: new Date().toISOString() });
+    if (error) throw normErr(error);
+    if (cache[col]) { cache[col].set(id, value); emit(col); }
+  };
+  return {
+    collection(col) {
+      return {
+        onSnapshot(next, onErr) {
+          (listeners[col] = listeners[col] || []).push(next);
+          load(col).catch(e => onErr && onErr(e));
+          return () => {};
+        }
+      };
+    },
+    doc(path) {
+      const [col, id] = path.split("/");
+      const ref = {
+        async get() {
+          if (cache[col] && cache[col].has(id)) { const v = cache[col].get(id); return { exists: true, data: () => v }; }
+          const { data, error } = await sb.from("docs").select("data").eq("atelier_id", atelierId).eq("collection", col).eq("id", id).maybeSingle();
+          if (error) throw normErr(error);
+          return { exists: !!data, data: () => (data ? data.data : undefined) };
+        },
+        set: value => put(col, id, value),
+        async update(patch) {
+          const cur = (cache[col] && cache[col].get(id)) || (await ref.get()).data();
+          if (!cur) throw { code: "invalid_argument", message: "Document introuvable" };
+          await put(col, id, { ...cur, ...patch });
+        },
+        async delete() {
+          const { error } = await sb.from("docs").delete().eq("atelier_id", atelierId).eq("collection", col).eq("id", id);
+          if (error) throw normErr(error);
+          if (cache[col]) { cache[col].delete(id); emit(col); }
+        }
+      };
+      return ref;
+    },
+    reloadAll() { return Promise.all(Object.keys(listeners).map(load)); },
+    changed(payload) {
+      const row = (payload.new && payload.new.collection) ? payload.new : payload.old;
+      const col = row && row.collection;
+      const cols = col ? [col] : Object.keys(listeners);
+      cols.filter(c => listeners[c]).forEach(c => {
+        clearTimeout(timers[c]);
+        timers[c] = setTimeout(() => load(c).catch(() => {}), 300);
+      });
+    }
+  };
+}
+
+S.stage = "loading";
+function setStage(stage) { S.stage = stage; document.body.dataset.stage = stage; render(); }
+
+function teardown() {
+  if (S.channel && SB) SB.removeChannel(S.channel);
+  S.channel = null;
+  clearInterval(S.poll);
+  S.db = null; S.atelier = null; S.dbState = "loading";
+  COLS.forEach(c => { S[c] = []; S.loaded[c] = false; });
+  S.photos.clear(); S.filledFor = null;
+}
+
+async function startSession(session) {
+  const user = session ? session.user : null;
+  if (!user) { teardown(); S.user = null; setStage("auth"); return; }
+  if (S.user && S.user.id === user.id && S.atelier) return;
+  S.user = user;
+  const { data, error } = await SB.from("membres").select("atelier_id, ateliers(id, nom, code_invitation)").eq("user_id", user.id).limit(1);
+  if (error) { showNotice("Impossible de charger votre atelier : " + error.message); return; }
+  if (!data.length || !data[0].ateliers) { $("#o-email").textContent = user.email || ""; setStage("onboard"); return; }
+  enterAtelier(data[0].ateliers);
+}
+
+function enterAtelier(atelier) {
+  teardown();
+  S.atelier = atelier;
+  const nameInput = $("#me-name");
+  if (!nameInput.value && S.user && S.user.email) nameInput.value = S.user.email.split("@")[0];
+  const db = makeDb(SB, atelier.id);
+  S.db = db; S.dbState = "on";
+  for (const col of COLS) {
+    db.collection(col).onSnapshot(snap => {
+      S[col] = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+      S.loaded[col] = true;
+      scheduleRender();
+    }, () => {
+      S.loaded[col] = true;
+      showNotice("Le chargement des données a échoué. Vérifiez votre connexion puis rechargez la page.");
+      scheduleRender();
+    });
+  }
+  try {
+    S.channel = SB.channel("docs-" + atelier.id)
+      .on("postgres_changes", { event: "*", schema: "public", table: "docs", filter: "atelier_id=eq." + atelier.id }, p => db.changed(p))
+      .subscribe();
+  } catch (e) { /* live updates are a bonus; the 60 s refresh below covers it */ }
+  S.poll = setInterval(() => { if (S.db === db) db.reloadAll().catch(() => {}); }, 60000);
+  $("#notice").hidden = true;
+  setStage("app");
+  route();
+  render();
+}
+
+async function signUp(btn) {
+  if (!SB) return;
+  const form = $("#f-login");
+  if (!form.reportValidity()) return;
+  const email = $("#l-email").value.trim(), password = $("#l-pass").value;
+  $("#l-msg").textContent = "";
+  await busy(btn, async () => {
+    const { data, error } = await SB.auth.signUp({ email, password, options: { emailRedirectTo: location.origin + location.pathname } });
+    if (error) {
+      $("#l-msg").textContent = /registered|exists/i.test(error.message) ? "Un compte existe déjà avec cet e-mail : connectez-vous." : "Création impossible : " + error.message;
+      return;
+    }
+    if (!data.session) $("#l-msg").textContent = "Compte créé. Ouvrez l'e-mail de confirmation reçu, puis revenez vous connecter.";
+  });
+}
+
+S.dl = true;
+if (!SB) {
+  setStage("loading");
+  showNotice(CONFIGURED
+    ? "Impossible de joindre le service de données. Vérifiez votre connexion internet puis rechargez la page."
+    : "COPO n'est pas encore relié à sa base de données : renseignez l'adresse et la clé Supabase dans le fichier config.js.");
+} else {
+  SB.auth.onAuthStateChange((event, session) => {
+    if (event === "SIGNED_OUT") { setTimeout(() => startSession(null), 0); return; }
+    if (event === "INITIAL_SESSION" || event === "SIGNED_IN") setTimeout(() => startSession(session), 0);
+  });
+}
+function showNotice(msg) { const n = $("#notice"); n.textContent = msg; n.hidden = false; }
+})();
+</script>
+</body>
+</html>
